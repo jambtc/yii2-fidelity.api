@@ -33,7 +33,7 @@ $config = [
             'enableAutoLogin' => true,
         ],
         'errorHandler' => [
-            'errorAction' => 'api/error',
+            'errorAction' => 'v1/error',
         ],
 
         'mailer' => [
@@ -54,6 +54,8 @@ $config = [
         ],
         'db' => $db,
 
+        'defaultRoute' => 'v1/index',
+
         // 'catchAll' => ['api/index'],
         //
         // 'urlManager' => [
@@ -68,13 +70,13 @@ $config = [
         //
         // ]
 
-        // 'urlManager' => [
-        //     'enablePrettyUrl' => true,
-        //     'showScriptName' => false,
-        //     'rules' => [
-        //         '<controller:\w+>/<action:\w+>' => '<controller>/<action>',
-        //     ],
-        // ],
+        'urlManager' => [
+            'enablePrettyUrl' => true,
+            'showScriptName' => false,
+            'rules' => [
+                '' => '',
+            ],
+        ],
 
     ],
     'params' => $params,

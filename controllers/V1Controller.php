@@ -19,7 +19,7 @@ use app\components\Messages;
 use app\components\WebApp;
 
 
-class ApiController extends Controller
+class V1Controller extends Controller
 {
     /**
      * {@inheritdoc}

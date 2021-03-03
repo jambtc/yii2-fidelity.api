@@ -57,7 +57,7 @@ class Messages extends Component
     public function push($attributes, $app='wallet')
     {
 
-        $filename = Yii::$app->basePath."/web/assets/push-message.log";
+        $filename = Yii::$app->basePath."/logs/push-message.log";
 		$myfile = fopen($filename, "a");
 
         fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : Salvo il messaggio\n");
