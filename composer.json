@@ -22,7 +22,8 @@
         "web3p/ethereum-tx": "^0.4.1",
         "minishlink/web-push": "^6.0",
         "sc0vu/web3.php": "^0.1.4",
-        "yiisoft/yii2-httpclient": "^2.0"
+        "yiisoft/yii2-httpclient": "^2.0",
+        "phpseclib/phpseclib": "~2.0"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",
