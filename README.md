@@ -63,6 +63,13 @@ INSTALLATION
 
 ### Install with Docker
 
+    docker login
+
+    docker run --rm -p 8000:80 jambtc/apifidelity-yii2
+
+
+### Install with docker-compose
+
 Clone the package from github
 
     git clone https://github.com/jambtc/yii2-api.fidelity.git
