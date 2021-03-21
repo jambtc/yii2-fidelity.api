@@ -129,22 +129,35 @@ class WebhookController extends Controller
         if (null === $store) $log->save('api.webhook','index','test webhook event','Store account not found.',true);
         else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Store account found: id # '.$store->id_store);
 
-        // to check if apy keys exist
-        // first I have to check if merchant exists
-        $merchant = Merchants::find()
-            ->andWhere(['id_merchant'=>$store->id_merchant])
-            ->one();
+        // check if pkey exist
+        if (false === $get['pkey']) $log->save('api.webhook','index','test webhook event','Public key isn\'t set or invalid.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Public key is: '.$get['pkey']);
 
-        if (null === $merchant) $log->save('api.webhook','index','test webhook event','Merchant account not found.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Merchant account found: id # '.$merchant->id_merchant);
-
-        // and then I can search for api keys
+        // check if public api key exists
         $apikeys = ApiKeys::find()
-            ->andWhere(['id_user'=>$merchant->id_user])
+            ->andWhere(['key_public'=>$get['pkey']])
             ->one();
 
         if (null === $apikeys) $log->save('api.webhook','index','test webhook event','Api keys not found.',true);
         else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Api keys found. Public key is: '.$apikeys->key_public);
+
+
+        // // to check if apy keys exist
+        // // first I have to check if merchant exists
+        // $merchant = Merchants::find()
+        //     ->andWhere(['id_merchant'=>$store->id_merchant])
+        //     ->one();
+        //
+        // if (null === $merchant) $log->save('api.webhook','index','test webhook event','Merchant account not found.',true);
+        // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Merchant account found: id # '.$merchant->id_merchant);
+
+        // // and then I can search for api keys
+        // $apikeys = ApiKeys::find()
+        //     ->andWhere(['id_user'=>$merchant->id_user])
+        //     ->one();
+        //
+        // if (null === $apikeys) $log->save('api.webhook','index','test webhook event','Api keys not found.',true);
+        // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Api keys found. Public key is: '.$apikeys->key_public);
 
 
         // now I'm ready to check signature
@@ -156,17 +169,13 @@ class WebhookController extends Controller
             }
         }
 
+        // IN FASE DI TEST È DISABILITATO IL CONTROLLO
         $generatedHash = base64_encode(hash_hmac('sha256', $rawcontent, $secret, true));
-        // if ($receivedHash !== $generatedHash) $log->save('api.webhook','index','test webhook event','Signature or api keys are invalid.',true);
-        // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Signature is valid.');
+            // if ($receivedHash !== $generatedHash) $log->save('api.webhook','index','test webhook event','Signature or api keys are invalid.',true);
+            // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Signature is valid.');
 
 
-        // now search client data on archive
-        // in quale tabella user cerco ??
-        // in quella del wallet??
-
-
-        // search customer data
+        // NOW, WE CAN SEARCH FOR CUSTOMER DATA ONLY BY HIS EMAIL
         $customer = Users::find()
  	     	->andWhere(['email'=>$post['billing']['email']])
  	    	->one();
@@ -179,25 +188,29 @@ class WebhookController extends Controller
         if (null === $customerWalletAddress) $log->save('api.webhook','index','test webhook event','Customer wallet address account not found.',true);
         else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Customer wallet address found: '.$customerWalletAddress);
 
-        // generate the new payload
-        $payload = new \stdClass;
+        // generate the mandatory elements
+        $mandatory = new \stdClass;
+        $mandatory->merchant_id = $store->id_merchant;
+        $mandatory->customer_id = $customer->id;
+        $mandatory->client_address = $customerWalletAddress;
+        $mandatory->redirect_url = (PRODUCTION) ? PRODUCTION_REDIRECT_URL : SANDBOX_REDIRECT_URL ;
+        $mandatory->total_price = $post['total'];
+
+        // generate event
         $event = json_decode(json_encode($post));
 
-        // assign mandatory items to payload
-        $event->merchant_id = $store->id_merchant;
-        $event->customer_id = $customer->id;
-        $event->client_address = $customerWalletAddress;
-        $event->redirect_url = (PRODUCTION) ? PRODUCTION_REDIRECT_URL : SANDBOX_REDIRECT_URL ;
-        $event->total_price = $post['total'];
+        // assign mandatory items to event
+        $event->rulesengine = $mandatory;
 
-        // closing the payload
+        // generating the final payload
+        $payload = new \stdClass;
         $payload->event = $event;
         if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','New Payload to Rules Engine Server is: <pre>'.print_r($payload,true).'</pre>');
 
         // save payload in archive
         $model = new ReRequests;
         $model->timestamp = time();
-        $model->id_merchant = $event->merchant_id;
+        $model->id_merchant = $mandatory->merchant_id;
         $model->payload = json_encode($payload);
         $model->sent = 0; // NON INVIATO
         $model->save();

@@ -26,8 +26,13 @@ The webhook can receive events from:
 #### WooCommerce
 In the Fidelity dashboard the merchant have to set the Api keys for woocommerce plugin. Then, in WooCommerce add a new webhook and set these informations:
 1. **Topic**: select `Order updated`
-2. **Delivery URL**: set something like `https://api.example.com/webhook/woocommerce?storeid=thestoreidfromfidelitydashboard`
-3. **Secret**: the secret api key generated from Fidelity dashboard
+2. **Delivery URL**: is a url containing:
+    1. **storeid**: the store id
+    2. **pkey**: the public api key
+
+    Then the url will be like this:
+    `https://api.example.com/webhook/woocommerce?storeid=ZjdlTHl4N0Rxdkd0ZmlrUS81&pkey=g3WfwBQGpVzie4XnsY`
+3. **Secret**: the secret api key generated from Fidelity dashboard Api keys Manager
 
 #### other e-commerce integration
 </br>
