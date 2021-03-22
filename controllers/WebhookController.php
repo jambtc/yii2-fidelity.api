@@ -103,43 +103,52 @@ class WebhookController extends Controller
         $rawcontent = file_get_contents('php://input');
 
         // check if post payload exists
-        if (false === $post) $log->save('api.webhook','index','test webhook event','Could not read from the $_POST stream or invalid IPN received.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','$_POST stream is valid.');
+        if (false === $post) $log->save('api.webhook','woocommerce','webhook event','Could not read from the $_POST stream or invalid IPN received.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','$_POST stream is valid.');
 
         // check if id exists
-        if (true === empty($post['id'])) $log->save('api.webhook','index','test webhook event','Invalid Server payment notification message received - did not receive invoice ID.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Ipn id is valid.');
+        if (true === !empty($post['webhook'])){
+            $log->save('api.webhook','woocommerce','webhook event','Webhook update registered.');
+            echo Json::encode([
+                'success' => true,
+            ]);
+            exit;
+        }
+
+        // check if id exists
+        if (true === empty($post['id'])) $log->save('api.webhook','woocommerce','webhook event','Invalid Server payment notification message received - did not receive invoice ID.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Ipn id is valid.');
 
         // check if status exists
-        if (false === isset($post['status'])) $log->save('api.webhook','index','test webhook event','Status order not set, cannot continue.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Status order is: '.$post['status']);
+        if (false === isset($post['status'])) $log->save('api.webhook','woocommerce','webhook event','Status order not set, cannot continue.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Status order is: '.$post['status']);
 
         // if status <> 'completed' exit
-        if ($post['status'] != 'completed') $log->save('api.webhook','index','test webhook event','Status order is not completed. Its status is: '.$post['status'],true);
+        if ($post['status'] != 'completed') $log->save('api.webhook','woocommerce','webhook event','Status order is not completed. Its status is: '.$post['status'],true);
 
         // check if store id exist
-        if (false === $get['storeid']) $log->save('api.webhook','index','test webhook event','Store id isn\'t set or invalid.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Store id is: '.$get['storeid']);
+        if (false === $get['storeid']) $log->save('api.webhook','woocommerce','webhook event','Store id isn\'t set or invalid.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Store id is: '.$get['storeid']);
 
         // check if store exist
         $store = Stores::find()
  	     	->andWhere(['id_store'=>$WebApp->decrypt($get['storeid'])])
  	    	->one();
 
-        if (null === $store) $log->save('api.webhook','index','test webhook event','Store account not found.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Store account found: id # '.$store->id_store);
+        if (null === $store) $log->save('api.webhook','woocommerce','webhook event','Store account not found.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Store account found: id # '.$store->id_store);
 
         // check if pkey exist
-        if (false === $get['pkey']) $log->save('api.webhook','index','test webhook event','Public key isn\'t set or invalid.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Public key is: '.$get['pkey']);
+        if (false === $get['pkey']) $log->save('api.webhook','woocommerce','webhook event','Public key isn\'t set or invalid.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Public key is: '.$get['pkey']);
 
         // check if public api key exists
         $apikeys = ApiKeys::find()
             ->andWhere(['key_public'=>$get['pkey']])
             ->one();
 
-        if (null === $apikeys) $log->save('api.webhook','index','test webhook event','Api keys not found.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Api keys found. Public key is: '.$apikeys->key_public);
+        if (null === $apikeys) $log->save('api.webhook','woocommerce','webhook event','Api keys not found.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Api keys found. Public key is: '.$apikeys->key_public);
 
 
         // // to check if apy keys exist
@@ -148,16 +157,16 @@ class WebhookController extends Controller
         //     ->andWhere(['id_merchant'=>$store->id_merchant])
         //     ->one();
         //
-        // if (null === $merchant) $log->save('api.webhook','index','test webhook event','Merchant account not found.',true);
-        // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Merchant account found: id # '.$merchant->id_merchant);
+        // if (null === $merchant) $log->save('api.webhook','woocommerce','webhook event','Merchant account not found.',true);
+        // else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Merchant account found: id # '.$merchant->id_merchant);
 
         // // and then I can search for api keys
         // $apikeys = ApiKeys::find()
         //     ->andWhere(['id_user'=>$merchant->id_user])
         //     ->one();
         //
-        // if (null === $apikeys) $log->save('api.webhook','index','test webhook event','Api keys not found.',true);
-        // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Api keys found. Public key is: '.$apikeys->key_public);
+        // if (null === $apikeys) $log->save('api.webhook','woocommerce','webhook event','Api keys not found.',true);
+        // else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Api keys found. Public key is: '.$apikeys->key_public);
 
 
         // now I'm ready to check signature
@@ -171,8 +180,8 @@ class WebhookController extends Controller
 
         // IN FASE DI TEST È DISABILITATO IL CONTROLLO
         $generatedHash = base64_encode(hash_hmac('sha256', $rawcontent, $secret, true));
-            // if ($receivedHash !== $generatedHash) $log->save('api.webhook','index','test webhook event','Signature or api keys are invalid.',true);
-            // else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Signature is valid.');
+            // if ($receivedHash !== $generatedHash) $log->save('api.webhook','woocommerce','webhook event','Signature or api keys are invalid.',true);
+            // else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Signature is valid.');
 
 
         // NOW, WE CAN SEARCH FOR CUSTOMER DATA ONLY BY HIS EMAIL
@@ -180,13 +189,13 @@ class WebhookController extends Controller
  	     	->andWhere(['email'=>$post['billing']['email']])
  	    	->one();
 
-        if (null === $customer) $log->save('api.webhook','index','test webhook event','Customer account not found.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Customer account found: id # '.$customer->id);
+        if (null === $customer) $log->save('api.webhook','woocommerce','webhook event','Customer account not found.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Customer account found: id # '.$customer->id);
 
         // cerco il wallet address
         $customerWalletAddress = MPWallets::find()->userAddress($customer->id);
-        if (null === $customerWalletAddress) $log->save('api.webhook','index','test webhook event','Customer wallet address account not found.',true);
-        else if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','Customer wallet address found: '.$customerWalletAddress);
+        if (null === $customerWalletAddress) $log->save('api.webhook','woocommerce','webhook event','Customer wallet address account not found.',true);
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Customer wallet address found: '.$customerWalletAddress);
 
         // generate the mandatory elements
         $mandatory = new \stdClass;
@@ -205,7 +214,7 @@ class WebhookController extends Controller
         // generating the final payload
         $payload = new \stdClass;
         $payload->event = $event;
-        if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','New Payload to Rules Engine Server is: <pre>'.print_r($payload,true).'</pre>');
+        if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','New Payload to Rules Engine Server is: <pre>'.print_r($payload,true).'</pre>');
 
         // save payload in archive
         $model = new ReRequests;
@@ -214,7 +223,7 @@ class WebhookController extends Controller
         $model->payload = json_encode($payload);
         $model->sent = 0; // NON INVIATO
         $model->save();
-        if (!PRODUCTION) $log->save('api.webhook','index','test webhook event','New Payload saved');
+        if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','New Payload saved');
 
         //eseguo lo script che si occuperà in background di verificare lo stato dell'evento appena creata...
         $cmd = Yii::$app->basePath.DIRECTORY_SEPARATOR.'yii request --id='.$WebApp->encrypt($model->id_request);
@@ -225,7 +234,7 @@ class WebhookController extends Controller
             'request_id' => $WebApp->encrypt($model->id_request),
             'code' => 200,
         ];
-        $log->save('api.webhook','index','test webhook event','Final response is: <pre>'.print_r($response,true).'</pre>');
+        $log->save('api.webhook','woocommerce','webhook event','Final response is: <pre>'.print_r($response,true).'</pre>');
 
         // Respond with HTTP 200
         return \Yii::createObject([
