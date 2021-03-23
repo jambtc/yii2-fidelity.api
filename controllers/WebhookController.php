@@ -150,25 +150,6 @@ class WebhookController extends Controller
         if (null === $apikeys) $log->save('api.webhook','woocommerce','webhook event','Api keys not found.',true);
         else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Api keys found. Public key is: '.$apikeys->key_public);
 
-
-        // // to check if apy keys exist
-        // // first I have to check if merchant exists
-        // $merchant = Merchants::find()
-        //     ->andWhere(['id_merchant'=>$store->id_merchant])
-        //     ->one();
-        //
-        // if (null === $merchant) $log->save('api.webhook','woocommerce','webhook event','Merchant account not found.',true);
-        // else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Merchant account found: id # '.$merchant->id_merchant);
-
-        // // and then I can search for api keys
-        // $apikeys = ApiKeys::find()
-        //     ->andWhere(['id_user'=>$merchant->id_user])
-        //     ->one();
-        //
-        // if (null === $apikeys) $log->save('api.webhook','woocommerce','webhook event','Api keys not found.',true);
-        // else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Api keys found. Public key is: '.$apikeys->key_public);
-
-
         // now I'm ready to check signature
         $secret = $WebApp->decrypt($apikeys->key_secret);
         $receivedHash = '';
@@ -180,9 +161,9 @@ class WebhookController extends Controller
 
         // IN FASE DI TEST È DISABILITATO IL CONTROLLO
         $generatedHash = base64_encode(hash_hmac('sha256', $rawcontent, $secret, true));
-            // if ($receivedHash !== $generatedHash) $log->save('api.webhook','woocommerce','webhook event','Signature or api keys are invalid.',true);
-            // else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Signature is valid.');
-
+        if (PRODUCTION && $receivedHash !== $generatedHash) $log->save('api.webhook','woocommerce','webhook event','Signature or api keys are invalid.',true);
+        else if (!PRODUCTION && $receivedHash !== $generatedHash) $log->save('api.webhook','woocommerce','webhook event','Signature is invalid, but the program will not be stopped.');
+        else if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','Signature is valid.');
 
         // NOW, WE CAN SEARCH FOR CUSTOMER DATA ONLY BY HIS EMAIL
         $customer = Users::find()
@@ -199,21 +180,25 @@ class WebhookController extends Controller
 
         // generate the mandatory elements
         $mandatory = new \stdClass;
+        $mandatory->plugin = 'WooCommerce';
         $mandatory->merchant_id = $store->id_merchant;
         $mandatory->customer_id = $customer->id;
         $mandatory->client_address = $customerWalletAddress;
         $mandatory->redirect_url = (PRODUCTION) ? PRODUCTION_REDIRECT_URL : SANDBOX_REDIRECT_URL ;
         $mandatory->total_price = $post['total'];
 
-        // generate event
-        $event = json_decode(json_encode($post));
-
-        // assign mandatory items to event
-        $event->rulesengine = $mandatory;
+        // generate the items
+        $items = null;
+        foreach ($post['line_items'] as $id => $product){
+            $items[$id]['product_id'] = $product['product_id'];
+            $items[$id]['product_name'] = $product['name'];
+            $items[$id]['product_price'] = $product['price'];
+        }
+        $mandatory->items = $items;
 
         // generating the final payload
         $payload = new \stdClass;
-        $payload->event = $event;
+        $payload->event = $mandatory;
         if (!PRODUCTION) $log->save('api.webhook','woocommerce','webhook event','New Payload to Rules Engine Server is: <pre>'.print_r($payload,true).'</pre>');
 
         // save payload in archive

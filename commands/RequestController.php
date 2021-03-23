@@ -9,20 +9,15 @@ namespace app\commands;
 
 use yii\console\Controller;
 use yii\console\ExitCode;
-
 use app\models\ReRequests;
-
 use app\components\WebApp;
 use app\components\Settings;
-
+use app\components\ApiLog;
 use yii\httpclient\Client;
 
 /**
- * This command echoes the first argument that you have entered.
  *
- * This command is provided as an example for you to learn how to create console commands.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
+ * @author Sergio Casizzone <jambtc@gmail.com>
  * @since 2.0
  */
 class RequestController extends Controller
@@ -35,9 +30,11 @@ class RequestController extends Controller
     }
 
     // scrive a video
-    private function log($text){
-       $time = "\r\n" .date('Y/m/d h:i:s a - ', time());
-       echo  $time.$text;
+    private function log($text, $die=false){
+        $log = new ApiLog;
+        $time = "\r\n" .date('Y/m/d h:i:s a - ', time());
+        echo  $time.$text;
+        $log->save('api.command','request','index', $time.$text, $die);
     }
 
     /**
@@ -53,6 +50,7 @@ class RequestController extends Controller
 		$MAXtry = 32768; // quasi 1 giorno di monitoraggio
 
 		$this->log("Checking request $this->id");
+        //$log->save('api.command','request','index','Store account found: id # '.$store->id_store);
 
         //carico la richiesta
         $model = ReRequests::findOne(WebApp::decrypt($this->id));
@@ -70,7 +68,7 @@ class RequestController extends Controller
                 $nonce = $microtime[1] . str_pad(substr($microtime[0], 2, 6), 6, '0');
 
                 $payload = json_decode($model->payload);
-                $payload->event->rulesengine->nonce = $nonce;
+                $payload->event->nonce = $nonce;
 
                 // build the POST data string
                 $postdata = http_build_query($payload, '', '&');
@@ -81,7 +79,7 @@ class RequestController extends Controller
                 $headers = array(
                   'API-Key: ' . $settings->RulesEngineApiKeyPublic,
                   'API-Sign: ' . base64_encode($sign),
-                  'x-fre-origin: '. $payload->event->rulesengine->merchant_id,
+                  'x-fre-origin: '. $payload->event->merchant_id,
                   'Authorization: ' . $settings->RulesEngineApiKeyPublic,
                   'Content-Type: application/json',
                   'accept: application/json',
@@ -89,7 +87,7 @@ class RequestController extends Controller
 
                 $jsonpayload = json_encode($payload);
 
-                // $this->log("json payload is: <pre>".print_r($payload,true)."</pre>");
+                // $log->save('api.command','request','index',"json payload is: <pre>".print_r($payload,true)."</pre>");
                 // exit;
 
                 $client = new Client();

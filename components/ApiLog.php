@@ -35,12 +35,11 @@ class ApiLog extends Component
         $remoteAddress = self::get_client_ip_server();
         $browser = 'localhost';
 
-        if (!Yii::$app->user->isGuest)
+        if ((isset(Yii::$app->user)) && !Yii::$app->user->isGuest)
             $id_user = Yii::$app->user->id;
 
         if (isset($_SERVER['HTTP_USER_AGENT']))
             $browser = $_SERVER['HTTP_USER_AGENT'];
-
 
         $model = new Log;
         $model->timestamp = $timestamp;
