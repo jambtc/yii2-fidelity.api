@@ -54,11 +54,11 @@ class RequestController extends Controller
 
         //carico la richiesta
         $model = ReRequests::findOne(WebApp::decrypt($this->id));
-		$this->log("Request loaded. Status is $model->sent");
+        if($model===null)
+            $this->log('Error. The requested id does not exist.',true);
 
+        $this->log("Request loaded. Status is $model->sent");
         $settings=Settings::load();
-        if($settings===null)
-            $this->log('Error. The requested Settings page does not exist.',true);
 
         // INIZIO IL LOOP
         while(true){

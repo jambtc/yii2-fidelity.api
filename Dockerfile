@@ -19,8 +19,12 @@ COPY views /var/www/views
 COPY widgets /var/www/widgets
 COPY vendor /var/www/vendor
 
+
 # this is the trick
 COPY web /var/www/html
 COPY requirements.php /var/www/html
+COPY yii /var/www
+RUN chmod +x /var/www/yii 
+
 RUN mv /var/www/config/db-docker.php /var/www/config/db.php
 RUN chown -R www-data:www-data /var/www
