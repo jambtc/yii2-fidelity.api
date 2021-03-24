@@ -37,7 +37,8 @@ class WebhookController extends Controller
 
         // urls where rules engine have to return its response
         define('PRODUCTION_REDIRECT_URL', 'https://dashboard.txlab.it/index.php?r=api');
-        define('SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/v1');
+        // define('SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/v1');
+        define('SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/index.php?r=v1');
 
         return [
             // 'access' => [
