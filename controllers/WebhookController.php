@@ -155,7 +155,7 @@ class WebhookController extends Controller
         $receivedHash = '';
         foreach ($headers as $name => $value) {
             if (strtoupper($name) == 'X-WC-WEBHOOK-SIGNATURE'){
-                $receivedHash = $value;
+                $receivedHash = $value[0];
             }
         }
 
@@ -196,14 +196,14 @@ class WebhookController extends Controller
         $mandatory->customer_id = $customer->id;
         $mandatory->client_address = $customerWalletAddress;
         $mandatory->redirect_url = (PRODUCTION) ? PRODUCTION_REDIRECT_URL : SANDBOX_REDIRECT_URL ;
-        $mandatory->total_price = $post['total'];
+        $mandatory->total_price = $post['total'] * 1;
 
         // generate the items
         $items = null;
         foreach ($post['line_items'] as $id => $product){
             $items[$id]['product_id'] = $product['product_id'];
             $items[$id]['product_name'] = $product['name'];
-            $items[$id]['product_price'] = $product['price'];
+            $items[$id]['product_price'] = $product['price'] * 1;
         }
         $mandatory->items = $items;
 
