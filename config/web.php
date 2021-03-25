@@ -56,27 +56,14 @@ $config = [
 
         'defaultRoute' => 'v1/index',
 
-        // 'catchAll' => ['api/index'],
-        //
-        // 'urlManager' => [
-        //     'enablePrettyUrl' => true,
-        //     'enableStrictParsing' => true,
-        //     'showScriptName' => false,
-        //     'rules' => [
-        //         ['class' => 'yii\rest\UrlRule', 'controller' => 'api'],
-        //     ],
-        // ],
-        // 'request' => [
-        //
-        // ]
-
-        // 'urlManager' => [
-        //     'enablePrettyUrl' => true,
-        //     'showScriptName' => false,
-        //     'rules' => [
-        //         '' => '',
-        //     ],
-        // ],
+        // in docker container enable the urlMAnager
+        'urlManager' => [
+            'enablePrettyUrl' => true,
+            'showScriptName' => false,
+            'rules' => [
+                '' => '',
+            ],
+        ],
 
     ],
     'params' => $params,

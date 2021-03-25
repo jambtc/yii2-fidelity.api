@@ -5,6 +5,12 @@ RUN docker-php-ext-install bcmath
 RUN apt-get update -y && apt-get install -y libpng-dev libgmp-dev
 RUN docker-php-ext-install gd
 RUN docker-php-ext-install gmp
+RUN apt-get install  openssh-server sudo -y
+RUN service ssh start
+#RUN apt-get install -y net-tools
+
+EXPOSE 22
+
 
 COPY assets /var/www/assets
 COPY commands /var/www/commands
@@ -24,7 +30,7 @@ COPY vendor /var/www/vendor
 COPY web /var/www/html
 COPY requirements.php /var/www/html
 COPY yii /var/www
-RUN chmod +x /var/www/yii 
+RUN chmod +x /var/www/yii
 
 RUN mv /var/www/config/db-docker.php /var/www/config/db.php
 RUN chown -R www-data:www-data /var/www

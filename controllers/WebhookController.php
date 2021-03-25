@@ -34,11 +34,14 @@ class WebhookController extends Controller
     {
         // change this constant to true in PRODUCTION
         define('PRODUCTION', false);
+        define('DOCKER_CONTAINER', true);
 
         // urls where rules engine have to return its response
         define('PRODUCTION_REDIRECT_URL', 'https://dashboard.txlab.it/index.php?r=api');
-        // define('SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/v1');
-        define('SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/index.php?r=v1');
+
+        // REDIRECT_URL
+        define('DOCKER_SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/v1');
+        define('STANDARD_SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/index.php?r=v1');
 
         return [
             // 'access' => [
@@ -196,7 +199,7 @@ class WebhookController extends Controller
         $mandatory->merchant_id = $store->id_merchant;
         $mandatory->customer_id = $customer->id;
         $mandatory->client_address = $customerWalletAddress;
-        $mandatory->redirect_url = (PRODUCTION) ? PRODUCTION_REDIRECT_URL : SANDBOX_REDIRECT_URL ;
+        $mandatory->redirect_url = PRODUCTION ? PRODUCTION_REDIRECT_URL : DOCKER_CONTAINER ? DOCKER_SANDBOX_REDIRECT_URL : STANDARD_SANDBOX_REDIRECT_URL ;
         $mandatory->total_price = $post['total'] * 1;
 
         // generate the items
