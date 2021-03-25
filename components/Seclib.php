@@ -33,7 +33,6 @@ class Seclib extends Component
                 $host_address = 'localhost';
                 $port = '22';
             }
-            $host_address = 'localhost';
 
             $ssh = new \phpseclib\Net\SSH2($host_address, $port);
             if (!$ssh->login(WebApp::decrypt(Settings::load()->sshuser), WebApp::decrypt(Settings::load()->sshpassword))) {

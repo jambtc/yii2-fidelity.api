@@ -2,6 +2,8 @@
 
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
+$urlmanager = isset($_ENV['DOCKERCONTAINER']) ? require __DIR__ . '/urlmanager.php' : [];
+
 
 $config = [
     'id' => 'basic',
@@ -57,13 +59,7 @@ $config = [
         'defaultRoute' => 'v1/index',
 
         // in docker container enable the urlMAnager
-        'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'rules' => [
-                '' => '',
-            ],
-        ],
+        'urlManager' => $urlmanager,
 
     ],
     'params' => $params,

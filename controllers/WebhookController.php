@@ -96,11 +96,6 @@ class WebhookController extends Controller
      */
     public function actionWoocommerce()
     {
-        $cmd = Yii::$app->basePath.DIRECTORY_SEPARATOR.'yii request --id='.time();
-        $ssh = Seclib::execInBackground($cmd);
-        echo "finito";
-        exit;
-
         $log = new ApiLog;
         $WebApp = new WebApp;
 
