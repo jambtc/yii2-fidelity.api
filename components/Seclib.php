@@ -28,11 +28,14 @@ class Seclib extends Component
             // determine whether we are running in a docker container
             if (isset($_ENV['DOCKERCONTAINER']) && $_ENV['DOCKERCONTAINER'] == true){
                 $host_address = $_SERVER['REMOTE_ADDR'];
+                $port = '2222';
             } else {
                 $host_address = 'localhost';
+                $port = '22';
             }
+            $host_address = 'localhost';
 
-            $ssh = new \phpseclib\Net\SSH2($host_address, 22);
+            $ssh = new \phpseclib\Net\SSH2($host_address, $port);
             if (!$ssh->login(WebApp::decrypt(Settings::load()->sshuser), WebApp::decrypt(Settings::load()->sshpassword))) {
                 return array('error' => 'Login to localhost server failed');
             }

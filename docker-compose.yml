@@ -8,3 +8,4 @@ services:
       - ./:/app:delegated
     ports:
       - '8000:80'
+      - '2222:22'

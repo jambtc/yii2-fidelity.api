@@ -34,7 +34,7 @@ class WebhookController extends Controller
     {
         // change this constant to true in PRODUCTION
         define('PRODUCTION', false);
-        define('DOCKER_CONTAINER', true);
+        define('DOCKER_CONTAINER', isset($_ENV['DOCKERCONTAINER']) ? true : false);
 
         // urls where rules engine have to return its response
         define('PRODUCTION_REDIRECT_URL', 'https://dashboard.txlab.it/index.php?r=api');
@@ -96,6 +96,11 @@ class WebhookController extends Controller
      */
     public function actionWoocommerce()
     {
+        $cmd = Yii::$app->basePath.DIRECTORY_SEPARATOR.'yii request --id='.time();
+        $ssh = Seclib::execInBackground($cmd);
+        echo "finito";
+        exit;
+
         $log = new ApiLog;
         $WebApp = new WebApp;
 

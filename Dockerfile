@@ -32,5 +32,5 @@ RUN chmod +x /var/www/yii
 RUN mv /var/www/config/db-docker.php /var/www/config/db.php
 RUN chown -R www-data:www-data /var/www
 
-EXPOSE 22
+#EXPOSE 22
 ENV DOCKERCONTAINER=true
