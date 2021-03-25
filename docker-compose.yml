@@ -1,6 +1,6 @@
 version: '3'
 services:
-  yii2-php:
+  yii2:
     #image: yiisoftware/yii2-php:7.2-apache
     build: .
     volumes:

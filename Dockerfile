@@ -9,9 +9,6 @@ RUN apt-get install  openssh-server sudo -y
 RUN service ssh start
 #RUN apt-get install -y net-tools
 
-EXPOSE 22
-
-
 COPY assets /var/www/assets
 COPY commands /var/www/commands
 COPY components /var/www/components
@@ -34,3 +31,6 @@ RUN chmod +x /var/www/yii
 
 RUN mv /var/www/config/db-docker.php /var/www/config/db.php
 RUN chown -R www-data:www-data /var/www
+
+EXPOSE 22
+ENV DOCKERCONTAINER=true
