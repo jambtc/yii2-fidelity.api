@@ -5,35 +5,43 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "mp_users".
+ * This is the model class for table "users".
  *
  * @property int $id
  * @property string $username
  * @property string $password
- * @property string|null $ga_secret_key
- * @property string $activation_code
- * @property int $status_activation_code
- * @property string $oauth_provider
- * @property string $oauth_uid
+ * @property string|null $activation_code
+ * @property int|null $status_activation_code
  * @property string|null $authKey
  * @property string|null $accessToken
- * @property string|null $facade
- * @property string|null $provider
- * @property string|null $picture
- * @property string|null $email
- * @property string|null $last_name
  * @property string|null $first_name
+ * @property string|null $last_name
+ * @property string|null $email
+ * @property int|null $is_merchant
+ * @property string|null $denomination
+ * @property string|null $tax_code
+ * @property string|null $address
+ * @property string|null $cap
+ * @property string|null $city
+ * @property string|null $country
  *
- * @property MpWallet[] $mpWallets
+ * @property PushSubscriptions[] $pushSubscriptions
  */
 class Users extends \yii\db\ActiveRecord
 {
+    const STATUS_INSERTED = 0;
+    const STATUS_ACTIVE = 1;
+    const STATUS_BLOCKED = 2;
+
+    public $_sin;
+
+
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'mp_users';
+        return 'users';
     }
 
     /**
@@ -42,14 +50,13 @@ class Users extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['username', 'password', 'activation_code', 'status_activation_code', 'oauth_provider', 'oauth_uid'], 'required'],
-            [['status_activation_code'], 'integer'],
-            [['username', 'password', 'authKey', 'accessToken', 'picture', 'email', 'last_name', 'first_name'], 'string', 'max' => 255],
-            [['ga_secret_key'], 'string', 'max' => 16],
+            [['username', 'password'], 'required'],
+            [['status_activation_code', 'is_merchant'], 'integer'],
+            [['username', 'password', 'authKey', 'accessToken', 'first_name', 'last_name', 'email', 'denomination', 'address', 'city', 'country'], 'string', 'max' => 255],
             [['activation_code'], 'string', 'max' => 50],
-            [['oauth_provider'], 'string', 'max' => 8],
-            [['oauth_uid'], 'string', 'max' => 100],
-            [['facade', 'provider'], 'string', 'max' => 20],
+            [['tax_code'], 'string', 'max' => 20],
+            [['cap'], 'string', 'max' => 10],
+            [['username'], 'unique'],
         ];
     }
 
@@ -62,30 +69,31 @@ class Users extends \yii\db\ActiveRecord
             'id' => Yii::t('app', 'ID'),
             'username' => Yii::t('app', 'Username'),
             'password' => Yii::t('app', 'Password'),
-            'ga_secret_key' => Yii::t('app', 'Ga Secret Key'),
             'activation_code' => Yii::t('app', 'Activation Code'),
             'status_activation_code' => Yii::t('app', 'Status Activation Code'),
-            'oauth_provider' => Yii::t('app', 'Oauth Provider'),
-            'oauth_uid' => Yii::t('app', 'Oauth Uid'),
             'authKey' => Yii::t('app', 'Auth Key'),
             'accessToken' => Yii::t('app', 'Access Token'),
-            'facade' => Yii::t('app', 'Facade'),
-            'provider' => Yii::t('app', 'Provider'),
-            'picture' => Yii::t('app', 'Picture'),
-            'email' => Yii::t('app', 'Email'),
-            'last_name' => Yii::t('app', 'Last Name'),
             'first_name' => Yii::t('app', 'First Name'),
+            'last_name' => Yii::t('app', 'Last Name'),
+            'email' => Yii::t('app', 'Email'),
+            'is_merchant' => Yii::t('app', 'Is Merchant'),
+            'denomination' => Yii::t('app', 'Denomination'),
+            'tax_code' => Yii::t('app', 'Tax Code'),
+            'address' => Yii::t('app', 'Address'),
+            'cap' => Yii::t('app', 'Cap'),
+            'city' => Yii::t('app', 'City'),
+            'country' => Yii::t('app', 'Country'),
         ];
     }
 
     /**
-     * Gets query for [[MpWallets]].
+     * Gets query for [[PushSubscriptions]].
      *
-     * @return \yii\db\ActiveQuery|\app\models\query\MpWalletQuery
+     * @return \yii\db\ActiveQuery|\app\models\query\PushSubscriptionsQuery
      */
-    public function getMpWallets()
+    public function getPushSubscriptions()
     {
-        return $this->hasMany(MpWallet::className(), ['id_user' => 'id']);
+        return $this->hasMany(PushSubscriptions::className(), ['id_user' => 'id']);
     }
 
     /**
@@ -98,20 +106,112 @@ class Users extends \yii\db\ActiveRecord
     }
 
     /**
-     * {@inheritdoc}
+     * Finds user by username
+     *
+     * @param string $username
+     * @return static|null
      */
-    public function getAuthKey()
+    public static function findByUsername($username)
     {
-        return $this->authKey;
+        return self::findOne(['username'=>$username]);
+    }
+
+    /**
+     * Validates password
+     *
+     * @param string $password password to validate
+     * @return bool if password provided is valid for current user
+     */
+    public function validatePassword($password)
+    {
+        return Yii::$app->getSecurity()->validatePassword($password, $this->password);
     }
 
     public function beforeSave($insert) {
-        if(isset($this->password))
-            $this->password = Yii::$app->getSecurity()->generatePasswordHash($this->password);
+        $this->password = \Yii::$app->getSecurity()->generatePasswordHash($this->password);
 
         return parent::beforeSave($insert);
     }
 
-    
+    /**
+     * Finds out if password reset token is valid
+     *
+     * @param string $token password reset token
+     * @return bool
+     */
+    public static function isPasswordResetTokenValid($token)
+    {
+        if (empty($token)) {
+            return false;
+        }
 
+        $timestamp = (int) substr($token, strrpos($token, '_') + 1);
+        $expire = Yii::$app->params['user.passwordResetTokenExpire'];
+        return $timestamp + $expire >= time();
+    }
+    /**
+     * Generates new password reset token
+     */
+    public function generatePasswordResetToken()
+    {
+        $this->activation_code = Yii::$app->security->generateRandomString() . '_' . time();
+    }
+
+    /**
+     * Finds user by password reset token
+     *
+     * @param string $token password reset token
+     * @return static|null
+     */
+    public static function findByPasswordResetToken($token)
+    {
+        if (!static::isPasswordResetTokenValid($token)) {
+            return null;
+        }
+
+        return static::findOne([
+            'activation_code' => $token,
+            'status_activation_code' => self::STATUS_ACTIVE,
+        ]);
+    }
+
+    /**
+     * Generates password hash from password and sets it to the model
+     *
+     * @param string $password
+     */
+    public function setPassword($password)
+    {
+        $this->password = $password; // l'hash viene generato befor-save
+    }
+    /**
+     * Removes password reset token
+     */
+    public function removePasswordResetToken()
+    {
+        $this->activation_code = 0;
+    }
+    /**
+     * Generates "remember me" authentication key
+     */
+    public function generateAuthKey()
+    {
+        $this->authKey = Yii::$app->security->generateRandomString();
+    }
+
+    /**
+     * Validates password
+     *
+     * @param string $password password to validate
+     * @return bool if password provided is valid for current user
+     */
+    public function validateSin($sin)
+    {
+        return $sin === $this->_sin;
+    }
+
+    public function setSin($in)
+    {
+        $this->_sin = $sin;
+    }
 }

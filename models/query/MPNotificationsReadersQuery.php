@@ -3,11 +3,11 @@
 namespace app\models\query;
 
 /**
- * This is the ActiveQuery class for [[\app\models\Log]].
+ * This is the ActiveQuery class for [[\app\models\NotificationsReaders]].
  *
- * @see \app\models\Log
+ * @see \app\models\NotificationsReaders
  */
-class LogQuery extends \yii\db\ActiveQuery
+class MPNotificationsReadersQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class LogQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Log[]|array
+     * @return \app\models\MPNotificationsReaders[]|array
      */
     public function all($db = null)
     {
@@ -25,10 +25,11 @@ class LogQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Log|array|null
+     * @return \app\models\MPNotificationsReaders|array|null
      */
     public function one($db = null)
     {
         return parent::one($db);
     }
+
 }

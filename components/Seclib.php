@@ -35,8 +35,12 @@ class Seclib extends Component
             }
 
             $ssh = new \phpseclib\Net\SSH2($host_address, $port);
-            if (!$ssh->login(WebApp::decrypt(Settings::load()->sshuser), WebApp::decrypt(Settings::load()->sshpassword))) {
-                return array('error' => 'Login to localhost server failed');
+            $host = Settings::host();
+            if (!$ssh->login($host->user, WebApp::decrypt($host->password))) {
+                throw new NotFoundHttpException(Yii::t('app', 'Login to {host} server failed.',
+                    [
+                        'host' => $host_address,
+                    ]));
             }
             $action = $cmd . " > /dev/null &";
             $ssh->exec($action);

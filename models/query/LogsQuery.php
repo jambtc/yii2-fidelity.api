@@ -3,11 +3,11 @@
 namespace app\models\query;
 
 /**
- * This is the ActiveQuery class for [[BoltTokens]].
+ * This is the ActiveQuery class for [[\app\models\Logs]].
  *
- * @see app\models\BoltTokens
+ * @see \app\models\Logs
  */
-class BoltTokensQuery extends \yii\db\ActiveQuery
+class LogsQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class BoltTokensQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return app\models\BoltTokens[]|array
+     * @return \app\models\Logs[]|array
      */
     public function all($db = null)
     {
@@ -25,16 +25,10 @@ class BoltTokensQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return app\models\BoltTokens|array|null
+     * @return \app\models\Logs|array|null
      */
     public function one($db = null)
     {
         return parent::one($db);
     }
-
-    public function findByHash($hash){
-        return $this->andWhere(['txhash'=>$hash])->one();
-    }
-
-    
 }

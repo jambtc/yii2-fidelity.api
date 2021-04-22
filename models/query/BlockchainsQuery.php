@@ -3,11 +3,11 @@
 namespace app\models\query;
 
 /**
- * This is the ActiveQuery class for [[\app\models\Users]].
+ * This is the ActiveQuery class for [[\app\models\Blockchains]].
  *
- * @see \app\models\Users
+ * @see \app\models\Blockchains
  */
-class UsersQuery extends \yii\db\ActiveQuery
+class BlockchainsQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class UsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Users[]|array
+     * @return \app\models\Blockchains[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class UsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Users|array|null
+     * @return \app\models\Blockchains|array|null
      */
     public function one($db = null)
     {

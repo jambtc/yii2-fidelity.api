@@ -7,7 +7,7 @@ namespace app\models\query;
  *
  * @see \app\models\Users
  */
-class UsersQuery extends \yii\db\ActiveQuery
+class MPUsersQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class UsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Users[]|array
+     * @return \app\models\MPUsers[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class UsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Users|array|null
+     * @return \app\models\MPUsers|array|null
      */
     public function one($db = null)
     {

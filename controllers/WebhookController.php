@@ -16,7 +16,7 @@ use app\components\Messages;
 use app\components\WebApp;
 use app\components\Seclib;
 
-use app\models\Users;
+use app\models\MPUsers;
 use app\models\MPWallets;
 use app\models\Stores;
 use app\models\ReRequests;
@@ -135,8 +135,8 @@ class WebhookController extends Controller
         else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Store id is: '.$get['storeid']);
 
         // check if store exist
-        $store = Stores::find()
- 	     	->andWhere(['id_store'=>$WebApp->decrypt($get['storeid'])])
+        $store = Stores::findOne()
+ 	     	->andWhere(['bps_storeid'=>$WebApp->decrypt($get['storeid'])])
  	    	->one();
 
         if (null === $store) $log->save('api','webhook','woocommerce','Store account not found.',true);
@@ -181,7 +181,7 @@ class WebhookController extends Controller
         }
 
         // NOW, WE CAN SEARCH FOR CUSTOMER DATA ONLY BY HIS EMAIL
-        $customer = Users::find()
+        $customer = MPUsers::find()
  	     	->andWhere(['email'=>$post['billing']['email']])
  	    	->one();
 
@@ -197,6 +197,7 @@ class WebhookController extends Controller
         $mandatory = new \stdClass;
         $mandatory->plugin_name = 'WooCommerce';
         $mandatory->merchant_id = $store->id_merchant;
+        $mandatory->store_id = $store->id;
         $mandatory->customer_id = $customer->id;
         $mandatory->client_address = $customerWalletAddress;
         $mandatory->redirect_url = PRODUCTION ? PRODUCTION_REDIRECT_URL : DOCKER_CONTAINER ? DOCKER_SANDBOX_REDIRECT_URL : STANDARD_SANDBOX_REDIRECT_URL ;
@@ -220,18 +221,19 @@ class WebhookController extends Controller
         $model = new ReRequests;
         $model->timestamp = time();
         $model->id_merchant = $mandatory->merchant_id;
+        $model->id_store = $mandatory->store_id;
         $model->payload = json_encode($payload);
         $model->sent = 0; // NON INVIATO
         $model->save();
         if (!PRODUCTION) $log->save('api','webhook','woocommerce','New Payload saved');
 
         //eseguo lo script che si occuperà in background di verificare lo stato dell'evento appena creata...
-        $cmd = Yii::$app->basePath.DIRECTORY_SEPARATOR.'yii request --id='.$WebApp->encrypt($model->id_request);
+        $cmd = Yii::$app->basePath.DIRECTORY_SEPARATOR.'yii request --id='.$WebApp->encrypt($model->id);
         $ssh = Seclib::execInBackground($cmd);
 
         //
         $response = [
-            'request_id' => $WebApp->encrypt($model->id_request),
+            'request_id' => $WebApp->encrypt($model->id),
             'code' => 200,
         ];
         $log->save('api','webhook','woocommerce','Final response is: <pre>'.print_r($response,true).'</pre>');

@@ -15,9 +15,9 @@ use Yii;
  * @property string $auth
  * @property string $p256dh
  *
- * @property Users $user
+ * @property MPUsers $user
  */
-class PushSubscriptions extends \yii\db\ActiveRecord
+class MPPushSubscriptions extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
@@ -37,7 +37,7 @@ class PushSubscriptions extends \yii\db\ActiveRecord
             [['type', 'browser', 'endpoint', 'auth', 'p256dh'], 'required'],
             [['type'], 'string', 'max' => 20],
             [['browser', 'endpoint', 'auth', 'p256dh'], 'string', 'max' => 1000],
-            [['id_user'], 'exist', 'skipOnError' => true, 'targetClass' => Users::className(), 'targetAttribute' => ['id_user' => 'id']],
+            [['id_user'], 'exist', 'skipOnError' => true, 'targetClass' => MPUsers::className(), 'targetAttribute' => ['id_user' => 'id']],
         ];
     }
 
@@ -64,15 +64,15 @@ class PushSubscriptions extends \yii\db\ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(Users::className(), ['id' => 'id_user']);
+        return $this->hasOne(MPUsers::className(), ['id' => 'id_user']);
     }
 
     /**
      * {@inheritdoc}
-     * @return \app\models\query\PushSubscriptionsQuery the active query used by this AR class.
+     * @return \app\models\query\MPPushSubscriptionsQuery the active query used by this AR class.
      */
     public static function find()
     {
-        return new \app\models\query\PushSubscriptionsQuery(get_called_class());
+        return new \app\models\query\MPPushSubscriptionsQuery(get_called_class());
     }
 }

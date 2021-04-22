@@ -3,11 +3,11 @@
 namespace app\models\query;
 
 /**
- * This is the ActiveQuery class for [[\app\models\Users]].
+ * This is the ActiveQuery class for [[\app\models\Notifications]].
  *
- * @see \app\models\Users
+ * @see \app\models\Notifications
  */
-class UsersQuery extends \yii\db\ActiveQuery
+class MPNotificationsQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class UsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Users[]|array
+     * @return \app\models\MPNotifications[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class UsersQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\Users|array|null
+     * @return \app\models\MPNotifications|array|null
      */
     public function one($db = null)
     {

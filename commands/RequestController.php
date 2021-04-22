@@ -58,7 +58,7 @@ class RequestController extends Controller
             $this->log('Error. The requested id does not exist.',true);
 
         $this->log("Request loaded. Status is $model->sent");
-        $settings=Settings::load();
+        $settings=Settings::rulesApiKeys();
 
         // INIZIO IL LOOP
         while(true){
@@ -74,13 +74,13 @@ class RequestController extends Controller
                 $postdata = http_build_query($payload, '', '&');
 
                 // set API key and sign the message
-                $sign = hash_hmac('sha512', hash('sha256', $nonce . $postdata, true), base64_decode($settings->RulesEngineApiKeySecret), true);
+                $sign = hash_hmac('sha512', hash('sha256', $nonce . $postdata, true), base64_decode(WebApp::decrypt($settings->secret_key)), true);
 
                 $headers = array(
-                  'API-Key: ' . $settings->RulesEngineApiKeyPublic,
+                  'API-Key: ' . $settings->public_key,
                   'API-Sign: ' . base64_encode($sign),
                   'x-fre-origin: '. $payload->event->merchant_id,
-                  'Authorization: ' . $settings->RulesEngineApiKeyPublic,
+                  'Authorization: ' . $settings->public_key,
                   'Content-Type: application/json',
                   'accept: application/json',
                 );
@@ -93,7 +93,7 @@ class RequestController extends Controller
                 $client = new Client();
                 $request = $client->createRequest()
                     ->setMethod('POST')
-                    ->setUrl($settings->RulesEngineApiKeyURL)
+                    ->setUrl($settings->url)
                     ->setData($payload)
                     ->setHeaders($headers)
                     ->send();

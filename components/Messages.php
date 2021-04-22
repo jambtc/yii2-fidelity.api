@@ -11,12 +11,21 @@ use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
 
 use yii\base\Model;
-use app\models\Notifications;
-use app\models\NotificationsReaders;
+
+// dashboard notifications
+// use app\models\Notifications;
+// use app\models\NotificationsReaders;
+// use app\models\PushSubscriptions;
+
+// wallet notifications
+// use app\models\MPNotifications;
+// use app\models\MPNotificationsReaders;
+// use app\models\MPPushSubscriptions;
 
 use app\components\Settings;
+use app\components\WebApp;
 use yii\data\ActiveDataProvider;
-use app\models\PushSubscriptions;
+
 
 /*
 * With this class I intend manage all notifications of app.
@@ -26,26 +35,53 @@ use app\models\PushSubscriptions;
 
 class Messages extends Component
 {
-    public static function save($attributes){
-        $model = new Notifications;
+    static public $tableNames = [
+        'dashboard' => [
+            'notifications' => 'app\models\Notifications',
+            'readers' => 'app\models\NotificationsReaders',
+            'subscriptions' => 'app\models\PushSubscriptions'
+        ],
+        'wallet' => [
+            'notifications' => 'app\models\MPNotifications',
+            'readers' => 'app\models\MPNotificationsReaders',
+            'subscriptions' => 'app\models\MPPushSubscriptions'
 
+        ]
+    ];
+
+    public static function save($app, $attributes){
+        $id_user = $attributes['id_user'];
+        unset($attributes['id_user']);
+
+        $model = new self::$tableNames[$app]['notifications'];
         $model->attributes = $attributes;
-        $model->id_user = $attributes['id_user'];
         $model->insert();
+        // self::log("Salvato in notification ora chiamo readers...");
 
         // Aggiorna le notifiche da leggere per l'utente
-        self::saveReader($model->id_user,$model->id_notification);
+        self::saveReader($app, $id_user,$model->id);
         return (object) $model->attributes;
     }
 
-    private function saveReader($id_user,$id_notification){
-        $readers = new NotificationsReaders;
+    private function saveReader($app, $id_user,$id_notification){
+        $readers = new self::$tableNames[$app]['readers'];
         $readers->id_user = $id_user;
         $readers->id_notification = $id_notification;
-        $readers->alreadyread = NotificationsReaders::STATUS_UNREAD;
+        $readers->alreadyread = self::$tableNames[$app]['readers']::STATUS_UNREAD;
         $readers->insert();
 
+        // self::log("Salvato in readers db");
+
         return true;
+    }
+
+    //scrive nel file log le informazioni richieste
+    private function log($text){
+        $logFileName = Yii::$app->basePath."/logs/messages-push.log";
+        $handlefile = fopen($logFileName, "a");
+
+		$time = "\r\n" .date('Y/m/d h:i:s a - ', time());
+		fwrite($handlefile, $time.$text);
     }
 
     /**
@@ -54,74 +90,47 @@ class Messages extends Component
     * @param $notification (array contenente la notifica)
     * @param $app (applicazione che riceverà la notifica) di default è Napay
     */
-    public function push($attributes, $app='wallet')
+    public function push($attributes, $app='dashboard')
     {
-
-        $filename = Yii::$app->basePath."/logs/push-message.log";
-		$myfile = fopen($filename, "a");
-
-        fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : Salvo il messaggio\n");
-        $notification = self::save($attributes);
+        // self::log("Salvo il messaggio in db");
+        $notification = self::save($app,$attributes);
 
         //Carico i parametri della webapp
-        $settings = Settings::load();
+        $settings = Settings::vapid();
 
         // $subscriptions = array();
-        fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : Carico il dataProvider\n");
+        // self::log("settings: <pre>".print_r($settings,true)."</pre>\n");
 
         $dataProvider = new ActiveDataProvider([
-            'query' => PushSubscriptions::find()->
+            'query' => self::$tableNames[$app]['subscriptions']::find()->
                 where([
-                    'id_user'=>$notification->id_user,
+                    'id_user'=>$attributes['id_user'],
                     'type' => $app
                     ]),
             'pagination' => false // !!! IMPORTANT TO GET ALL MODELS
         ]);
 
-        // $dataProvider = new ActiveDataProvider([
-        //     'query' => PushSubscriptions::find()
-        //                     ->andWhere('id_user' => $notification->id_user)
-        //                     ->andWhere('type' => $app),
-        //     'pagination' => false // !!! IMPORTANT TO GET ALL MODELS
-        // ]);
+        $content = [];
 
+        // self::log("dataprovider: <pre>".print_r($dataProvider,true)."</pre>\n");
+        // self::log("total count: <pre>".print_r($dataProvider->getTotalCount(),true)."</pre>\n");
 
-
-        //
-        // ) {
-        //     $object['endpoint'] =  $item->endpoint;
-        //     $object['auth'] =  $tabella->auth;
-        //     $object['p256dh'] =  $tabella->p256dh;
-        //   $subscriptions[$item->setting_name] = $item->setting_value;
-        // }
-
-        // $criteria=new CDbCriteria();
-        // $criteria->compare('id_user',$array->id_user,false);
-        // $criteria->compare('type',$app,false);
-
-        #echo '<pre>'.print_r($criteria,true).'</pre>';
-
-        // $subscribe_array = CHtml::listData(PushSubscriptions::model()->findAll($criteria), 'id_subscription', function($tabella) {
-        //     $object['endpoint'] =  $tabella->endpoint;
-        //     $object['auth'] =  $tabella->auth;
-        //     $object['p256dh'] =  $tabella->p256dh;
-        //     return $object;
-        // });
 
         if ($dataProvider->getTotalCount() >0 )
         {
-            fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : dataprovider > 0\n");
+            // self::log("Dataprovider > 0\n");
 
 
-        // if (isset($subscribe_array)){
-            // Crea autorizzazioni VAPID
             $auth = array(
                 'VAPID' => array(
                     'subject' => $notification->description,
-                    'publicKey' => $settings->VapidPublic, // don't forget that your public key also lives in app.js
-                    'privateKey' => $settings->VapidSecret, // in the real world, this would be in a secret file
+                    'publicKey' => $settings->public_key, // don't forget that your public key also lives in app.js
+                    'privateKey' => WebApp::decrypt($settings->secret_key), // in the real world, this would be in a secret file
                 ),
             );
+
+            // self::log("auth: <pre>".print_r($auth,true)."</pre>\n");
+
 
             // impostazioni di default
             $defaultOptions = [
@@ -130,12 +139,12 @@ class Messages extends Component
 
             // il contenuto del messaggio
             $content = array(
-                'title' => '['.self::appTitle($notification->type_notification,$app).'] - '. Yii::t('app','New message'), //'$array->type_notification,
+                'title' => '['.self::appTitle($notification->type,$app).'] - '. Yii::t('app','New message'), //'$array->type_notification,
                 'body' => $notification->description,
                 'icon' => 'src/images/icons/app-icon-96x96.png',
                 'badge' => 'src/images/icons/app-icon-96x96.png',
-                //'image' => $imagePath.'banner.png',
-                //'sound' => $soundPath.'notification-sound.mp3',
+                'image' => 'css/images/logo.png',
+                'sound' => 'src/sounds/notify.mp3',
                 'vibrate' => [200, 100, 200, 100, 200],
                 'tag' => 'notify',
                 'renotify' => true,
@@ -152,13 +161,17 @@ class Messages extends Component
                 ],
 
             );
+            // self::log("content: <pre>".print_r($content,true)."</pre>\n");
 
-            fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : Contenuto del messaggio è: <pre>".print_r($content,true)."</pre>\n");
+
+            // self::log("Contenuto del messaggio è: <pre>".print_r($content,true)."</pre>\n");
 
             #echo '<pre>'.print_r($content,true).'</pre>';
             // trasformo il payload in json
             $payload = Json::encode($content);
             #echo '<pre>'.print_r($pay_load,true).'</pre>';
+            // self::log("payload: <pre>".print_r($payload,true)."</pre>\n");
+
 
             // foreach ($subscribe_array as $id => $array){
 
@@ -171,9 +184,11 @@ class Messages extends Component
                         "auth" => $item->auth
                     ],
                 ]);
+                // self::log("subscriptions: <pre>".print_r($subscriptions,true)."</pre>\n");
+
                 #echo '<pre>'.print_r($array,true).'</pre>';
                 #echo '<pre>'.print_r($subscription,true).'</pre>';
-                fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : Invio messaggio per ciascuna subscription id_user:$item->id_user id_subscription:$item->id_subscription\n");
+                // self::log("Invio messaggio per ciascuna subscription id_user:$item->id_user id_subscription:$item->id_subscription\n");
 
 
                 // inizializzo la classe
@@ -189,6 +204,8 @@ class Messages extends Component
                         $subscription,
                         $payload // optional (defaults null)
                     );
+                    // self::log("subscription: <pre>".print_r($subscription,true)."</pre>\n");
+
                 }
 
                 // // invio il messaggio push
@@ -216,8 +233,16 @@ class Messages extends Component
               //     }
               // }
           } else {
-              fwrite($myfile, date('Y/m/d h:i:s a', time()) . " : dataprovider = 0\n");
+              // // self::log(" : dataprovider = 0\n");
+              // self::log("dataprovider = 0");
+
           }
+
+          return $content;
+
+
+
+
     }
     /**
     * Funzione che restituisce il titolo del messaggio push in base al type_notification

@@ -15,7 +15,7 @@ use yii\helpers\Json;
 use yii\helpers\Url;
 use yii\httpclient\Client;
 
-use app\models\Log;
+use app\models\Logs;
 
 
 class ApiLog extends Component
@@ -41,7 +41,7 @@ class ApiLog extends Component
         if (isset($_SERVER['HTTP_USER_AGENT']))
             $browser = $_SERVER['HTTP_USER_AGENT'];
 
-        $model = new Log;
+        $model = new Logs;
         $model->timestamp = $timestamp;
         $model->id_user = $id_user;
         $model->remote_address = $remoteAddress;

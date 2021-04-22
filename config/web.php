@@ -1,9 +1,8 @@
 <?php
-
+$secrets = require __DIR__ . '/secrets.php';
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 $urlmanager = isset($_ENV['DOCKERCONTAINER']) ? require __DIR__ . '/urlmanager.php' : [];
-
 
 $config = [
     'id' => 'basic',
@@ -16,12 +15,12 @@ $config = [
     ],
     'components' => [
         'Erc20' => ['class' => 'app\components\Erc20'],
-        'WebApp' => ['class' => 'app\components\WebApp'],
-        'Settings' => ['class' => 'app\components\Settings'],
-        'Messages' => ['class' => 'app\components\Messages'],
+        // 'WebApp' => ['class' => 'app\components\WebApp'],
+        // 'Settings' => ['class' => 'app\components\Settings'],
+        // 'Messages' => ['class' => 'app\components\Messages'],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
-            'cookieValidationKey' => 'GMPIfk9DHlvOhJX42jI9Q4FRhHocbvIB',
+            'cookieValidationKey' => $secrets['cookieValidationKey'],
             'parsers' => [
                 'application/json' => 'yii\web\JsonParser',
             ]
@@ -31,7 +30,7 @@ $config = [
             'class' => 'yii\caching\FileCache',
         ],
         'user' => [
-            'identityClass' => 'app\models\User',
+            'identityClass' => 'app\models\MPUsers',
             'enableAutoLogin' => true,
         ],
         'errorHandler' => [

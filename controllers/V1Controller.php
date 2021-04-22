@@ -7,11 +7,14 @@ use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
+use yii\web\NotFoundHttpException;
 
 use yii\helpers\Json;
 use yii\helpers\Url;
 
-use app\models\BoltTokens;
+use app\models\Transactions;
+use app\models\Merchants;
+use app\models\Stores;
 
 use app\components\ApiLog;
 use app\components\Settings;
@@ -29,26 +32,7 @@ class V1Controller extends Controller
         // change this constant to true in PRODUCTION
         define('PRODUCTION',false);
 
-        return [
-            // 'access' => [
-            //     'class' => AccessControl::className(),
-            //     'only' => ['logout'],
-            //     'rules' => [
-            //         [
-            //             'actions' => ['logout'],
-            //             'allow' => true,
-            //             'roles' => ['@'],
-            //         ],
-            //     ],
-            // ],
-
-            // 'verbs' => [
-            //     'class' => VerbFilter::className(),
-            //     'actions' => [
-            //         'index' => ['post'],
-            //     ],
-            // ],
-        ];
+        return [];
     }
 
     public function beforeAction($action)
@@ -125,12 +109,17 @@ class V1Controller extends Controller
         $pay = null;
 
         foreach ($actions as $action => $fields) {
-          switch ($action) {
-            case 'pay':
-              // pay customer
-              $pay = $this->payCustomer($payload->customer_id,$fields);
-              if (!PRODUCTION) $log->save('api.fidelity','index','manage event','Payment is: <pre>'.print_r($pay,true).'</pre>');
-              break;
+            // echo '<pre>'.print_r($action,true);
+            // echo '<pre>'.print_r($fields,true);
+            // echo '<pre>'.print_r($payload,true);
+
+            switch ($action) {
+                // pay customer
+                case 'pay':
+                    $pay = $this->payCustomer($payload, $fields);
+
+                    if (!PRODUCTION) $log->save('api.fidelity','index','manage event','Payment is: <pre>'.print_r($pay,true).'</pre>');
+                    break;
 
             case 'mail':
               // send mail to customer
@@ -140,8 +129,7 @@ class V1Controller extends Controller
               break;
 
 
-          }
-
+            }
         }
 
         $response = [
@@ -151,8 +139,6 @@ class V1Controller extends Controller
         $log->save('api.fidelity','index','manage event','Final event is: <pre>'.print_r($response,true).'</pre>');
 
         return $this->json($response);
-
-
 
     }
 
@@ -167,49 +153,60 @@ class V1Controller extends Controller
      * @throws CJSON
      */
 
-    private function payCustomer($customer_id, $action)
+    private function payCustomer($payload, $fields)
     {
         $WebApp = new WebApp;
         $log = new ApiLog;
 
-        //Carico i parametri dell'account principale
-        $settings = Settings::load();
-  		if ($settings === null
-  			|| empty($settings->poa_sealerAccount)
-  			|| empty($settings->poa_sealerPrvKey)
-  		){
-            $log->save('api.fidelity','payCustomer','manage event','Sealer account data cannot be found.',true);
-  		}
+        $store_id = $payload->store_id;  // needed to select which blockchain use
+        $customer_id = (integer) $payload->customer_id;
 
-        $fromAccount = $settings->poa_sealerAccount; //'0x654b98728213cf1e20e90b1942fdc5597984eb70'; // node1 fujitsu gabcoin
-        $toAccount = $action->client_address;
-        $amount = $action->token_amount;
-        $memo = $action->message;
-        $decrypted = $WebApp->decrypt($settings->poa_sealerPrvKey);
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','I\'m in.');
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer id is: <pre>'.var_dump($customer_id).'</pre>');
+
+        $store = Stores::findOne($store_id);
+        $blockchain = $store->blockchain;
+        // echo '<pre>'.print_r($blockchain,true);exit;
+        // if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','Blockchain is: <pre>'.print_r($blockchain,true).'</pre>');
+
+
+        //Carico i parametri poa dello store
+        $settings = Settings::poa($blockchain->id);
+        // if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','poa is: <pre>'.print_r($settings,true).'</pre>');
+
+
+        // imposto eth
+        $ERC20 = new Yii::$app->Erc20($blockchain->id);
+
+        $fromAccount = $settings->sealer_address; //'0x654b98728213cf1e20e90b1942fdc5597984eb70'; // node1 fujitsu gabcoin
+        $toAccount = $fields->client_address;
+        $amount = $fields->token_amount;
+        $memo = $fields->message;
+        $decrypted = $WebApp->decrypt($settings->sealer_private_key);
         if (null === $decrypted){
-			throw new HttpException(404,'Cannot decrypt private key.');
+			throw new NotFoundHttpException(404,'Cannot decrypt private key.');
 		}
-        $amountForContract = $amount * pow(10, $settings->poa_decimals);
+        $amountForContract = $amount * pow(10, $settings->decimals);
 
         // imposto il valore del nonce attuale
-		$block = Yii::$app->Erc20->getBlockInfo();
-		$nonce = Yii::$app->Erc20->getNonce($fromAccount);
+		$block = $ERC20->getBlockInfo();
+		$nonce = $ERC20->getNonce($fromAccount);
 
 		// genero la transazione nell'intervallo del nonce
 		$maxNonce = $nonce + 10;
 
         while ($nonce < $maxNonce)
 		{
-			$tx = Yii::$app->Erc20->SendToken([
+			$tx = $ERC20->SendToken([
 				'nonce' => $nonce,
 				'from' => $fromAccount, //indirizzo commerciante
-				'contractAddress' => $settings->poa_contractAddress, //indirizzo contratto
+				'contractAddress' => $settings->smart_contract_address, //indirizzo contratto
 				'toAccount' => $toAccount,
 				'amount' => $amountForContract,
 				'gas' => '0x200b20', // $gas se supera l'importo 0x200b20 va in eerrore gas exceed limit !!!!!!
 				'gasPrice' => '1000', // gasPrice giusto?
 				'value' => '0',
-				'chainId' => $settings->poa_chainId,
+				'chainId' => $settings->chain_id,
 				'decryptedSign' => $decrypted,
 			]);
 
@@ -219,10 +216,13 @@ class V1Controller extends Controller
 				$nonce++;
 			}
 		}
+
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','tx is: <pre>'.print_r($tx,true).'</pre>');
+
 		// echo '<pre>'.print_r($tx,true).'</pre>';
 		// exit;
 		if ($tx === null){
-			throw new HttpException(404,'Invalid nonce: '.$nonce);
+			throw new NotFoundHttpException(404,'Invalid nonce: '.$nonce);
 		}
 
 		//salva la transazione ERC20 in archivio
@@ -230,56 +230,75 @@ class V1Controller extends Controller
 		$invoice_timestamp = $timestamp;
 
 		//calcolo expiration time
-		$totalseconds = $settings->poa_expiration * 60; //poa_expiration è in minuti, * 60 lo trasforma in secondi
+		$totalseconds = $settings->invoice_expiration * 60; //poa_expiration è in minuti, * 60 lo trasforma in secondi
 		$expiration_timestamp = $timestamp + $totalseconds; //DEFAULT = 15 MINUTES
 
 		//$rate = $this->getFiatRate(); // al momento il token è peggato 1/1 sull'euro
 		$rate = 1; //eth::getFiatRate('token'); //
 
-		$tokens = new BoltTokens;
+		$tokens = new Transactions;
 		$tokens->id_user = $customer_id;
 		$tokens->status = 'new';
 		$tokens->type = 'token';
 		$tokens->token_price = $amount;
-		$tokens->token_ricevuti = 0;
-		$tokens->fiat_price = abs($rate * $amount);
-		$tokens->currency = 'EUR';
-		$tokens->item_desc = 'wallet';
-		$tokens->item_code = '0';
+		$tokens->token_received = 0;
 		$tokens->invoice_timestamp = $invoice_timestamp;
 		$tokens->expiration_timestamp = $expiration_timestamp;
-		$tokens->rate = $rate;
 		$tokens->from_address = $fromAccount;
 		$tokens->to_address = $toAccount;
-		$tokens->blocknumber = hexdec($block->number);
+		$tokens->blocknumber = $block->number;
 		$tokens->txhash = $tx;
-		$tokens->memo = $memo;
+		$tokens->message = $memo;
 
 		if (!($tokens->save())){
-			throw new HttpException(404,print_r($tokens->errors));
+            if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','transactions errors are: <pre>'.print_r($tokens->errors,true).'</pre>');
+			throw new NotFoundHttpException(404,print_r($tokens->errors));
 		}
 
-		// notifica per chi ha inviato (from_address)
+        // if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','transaction is: <pre>'.print_r($tokens,true).'</pre>');
+
+
+		// notifica per chi  riceve i token (to_address)
 		$notification = [
-			'type_notification' => 'token',
+			'type' => 'token',
 			'id_user' => $tokens->id_user,
-			'id_tocheck' => $tokens->id_token,
 			'status' => 'new',
 			'description' => Yii::t('app','You received a new transaction.'),
-			'url' => Url::to(["/tokens/view",'id'=>WebApp::encrypt($tokens->id_token)]),
+			'url' => Url::to(["/tokens/view",'id'=>WebApp::encrypt($tokens->id)]),
 			'timestamp' => time(),
 			'price' => $tokens->token_price,
-			'deleted' => 0,
 		];
-		Messages::push($notification);
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer notification is: <pre>'.print_r($notification,true).'</pre>');
+		Messages::push($notification,'wallet');
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer notification sent');
 
-		//adesso posso uscire CON IL JSON DA REGISTRARE NEL SW.
+        // notifica per chi  invia i token (alla dashboard)
+        //$merchant = $store->merchant->user;
+		$notification = [
+			'type' => 'token',
+			'id_user' =>  $store->merchant->user->id,
+			'status' => 'new',
+			'description' => Yii::t('app','You have sent a new transaction.'),
+			'url' => Url::to(["/tokens/view",'id'=>WebApp::encrypt($tokens->id)]),
+			'timestamp' => time(),
+			'price' => $tokens->token_price,
+		];
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','merchant notification is: <pre>'.print_r($notification,true).'</pre>');
+		Messages::push($notification,'wallet');
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','merchant notification sent');
+
+
+
+        //adesso posso uscire CON IL JSON DA REGISTRARE NEL SW.
 		$data = [
-			'id' => $WebApp->encrypt($tokens->id_token), //NECESSARIO PER IL SALVATAGGIO IN  indexedDB quando ritorna al Service Worker
+			'id' => $WebApp->encrypt($tokens->id), //NECESSARIO PER IL SALVATAGGIO IN  indexedDB quando ritorna al Service Worker
 			'status' => $tokens->status,
 			'success' => true,
             'txhash' => $tx
 		];
+
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','return data is: <pre>'.print_r($data,true).'</pre>');
+
 
 		return $this->json($data);
  	}

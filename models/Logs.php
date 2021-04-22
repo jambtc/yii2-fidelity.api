@@ -5,9 +5,9 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "np_log".
+ * This is the model class for table "logs".
  *
- * @property int $id_log
+ * @property int $id
  * @property int $timestamp
  * @property int|null $id_user
  * @property string $remote_address
@@ -16,16 +16,16 @@ use Yii;
  * @property string $controller
  * @property string $action
  * @property string $description
- * @property int $die
+ * @property int|null $die
  */
-class Log extends \yii\db\ActiveRecord
+class Logs extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'np_log';
+        return 'logs';
     }
 
     /**
@@ -34,11 +34,11 @@ class Log extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['timestamp', 'remote_address', 'browser', 'app', 'controller', 'action', 'description', 'die'], 'required'],
+            [['timestamp', 'remote_address', 'browser', 'app', 'controller', 'action', 'description'], 'required'],
             [['timestamp', 'id_user', 'die'], 'integer'],
             [['description'], 'string'],
-            [['remote_address'], 'string', 'max' => 60],
-            [['browser'], 'string', 'max' => 500],
+            [['remote_address'], 'string', 'max' => 20],
+            [['browser'], 'string', 'max' => 255],
             [['app', 'controller', 'action'], 'string', 'max' => 50],
         ];
     }
@@ -49,7 +49,7 @@ class Log extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id_log' => Yii::t('app', 'Id Log'),
+            'id' => Yii::t('app', 'ID'),
             'timestamp' => Yii::t('app', 'Timestamp'),
             'id_user' => Yii::t('app', 'Id User'),
             'remote_address' => Yii::t('app', 'Remote Address'),
@@ -64,10 +64,10 @@ class Log extends \yii\db\ActiveRecord
 
     /**
      * {@inheritdoc}
-     * @return \app\models\query\LogQuery the active query used by this AR class.
+     * @return \app\models\query\LogsQuery the active query used by this AR class.
      */
     public static function find()
     {
-        return new \app\models\query\LogQuery(get_called_class());
+        return new \app\models\query\LogsQuery(get_called_class());
     }
 }

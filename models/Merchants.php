@@ -5,17 +5,19 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "np_merchants".
+ * This is the model class for table "merchants".
  *
- * @property int $id_merchant
- * @property string $id_user
- * @property string $denomination
- * @property string $vat
- * @property string $address
- * @property string $city
- * @property string $county
- * @property string $cap
- * @property int $deleted
+ * @property int $id
+ * @property int $id_user
+ * @property string|null $denomination
+ * @property string|null $tax_code
+ * @property string|null $address
+ * @property string|null $cap
+ * @property string|null $city
+ * @property string|null $country
+ *
+ * @property Users $user
+ * @property Stores[] $stores
  */
 class Merchants extends \yii\db\ActiveRecord
 {
@@ -24,7 +26,7 @@ class Merchants extends \yii\db\ActiveRecord
      */
     public static function tableName()
     {
-        return 'np_merchants';
+        return 'merchants';
     }
 
     /**
@@ -33,9 +35,12 @@ class Merchants extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['id_user', 'denomination', 'vat', 'address', 'city', 'county', 'cap'], 'required'],
-            [['deleted'], 'integer'],
-            [['id_user', 'denomination', 'vat', 'address', 'city', 'county', 'cap'], 'string', 'max' => 250],
+            [['id_user'], 'required'],
+            [['id_user'], 'integer'],
+            [['denomination', 'address', 'city', 'country'], 'string', 'max' => 255],
+            [['tax_code'], 'string', 'max' => 50],
+            [['cap'], 'string', 'max' => 10],
+            [['id_user'], 'exist', 'skipOnError' => true, 'targetClass' => Users::className(), 'targetAttribute' => ['id_user' => 'id']],
         ];
     }
 
@@ -45,16 +50,36 @@ class Merchants extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id_merchant' => Yii::t('app', 'Id Merchant'),
+            'id' => Yii::t('app', 'ID'),
             'id_user' => Yii::t('app', 'Id User'),
             'denomination' => Yii::t('app', 'Denomination'),
-            'vat' => Yii::t('app', 'Vat'),
+            'tax_code' => Yii::t('app', 'Tax Code'),
             'address' => Yii::t('app', 'Address'),
-            'city' => Yii::t('app', 'City'),
-            'county' => Yii::t('app', 'County'),
             'cap' => Yii::t('app', 'Cap'),
-            'deleted' => Yii::t('app', 'Deleted'),
+            'city' => Yii::t('app', 'City'),
+            'country' => Yii::t('app', 'Country'),
+
         ];
+    }
+
+    /**
+     * Gets query for [[User]].
+     *
+     * @return \yii\db\ActiveQuery|\app\models\query\UsersQuery
+     */
+    public function getUser()
+    {
+        return $this->hasOne(Users::className(), ['id' => 'id_user']);
+    }
+
+    /**
+     * Gets query for [[Stores]].
+     *
+     * @return \yii\db\ActiveQuery|\app\models\query\StoresQuery
+     */
+    public function getStores()
+    {
+        return $this->hasMany(Stores::className(), ['id_merchant' => 'id']);
     }
 
     /**
@@ -64,5 +89,17 @@ class Merchants extends \yii\db\ActiveRecord
     public static function find()
     {
         return new \app\models\query\MerchantsQuery(get_called_class());
+    }
+
+
+
+    public function getIdByUser($id) {
+        $model = self::find()
+            ->andWhere(['id_user'=>$id])
+            ->one();
+
+        if (null === $model) return 0;
+
+        return $model->id;
     }
 }
