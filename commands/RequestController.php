@@ -110,7 +110,7 @@ class RequestController extends Controller
                 $response = $request->getData();
                 $this->log("json Response is: <pre>".print_r($response,true)."</pre>");
                 $this->log("array Response is: <pre>".print_r(json_decode($response,true),true)."</pre>");
-                exit;
+                // exit;
                 if ($this->analisi($response)){
                     $model->sent = 1;
                     $model->save();
