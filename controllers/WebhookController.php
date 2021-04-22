@@ -20,7 +20,7 @@ use app\models\MPUsers;
 use app\models\MPWallets;
 use app\models\Stores;
 use app\models\ReRequests;
-use app\models\ApiKeys;
+use app\models\Apikeys;
 use app\models\Merchants;
 
 
@@ -96,6 +96,7 @@ class WebhookController extends Controller
      */
     public function actionWoocommerce()
     {
+
         $log = new ApiLog;
         $WebApp = new WebApp;
 
@@ -135,33 +136,38 @@ class WebhookController extends Controller
         else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Store id is: '.$get['storeid']);
 
         // check if store exist
-        $store = Stores::findOne()
- 	     	->andWhere(['bps_storeid'=>$WebApp->decrypt($get['storeid'])])
+        $store = Stores::find()
+ 	     	->andWhere(['bps_storeid'=>$get['storeid']])
  	    	->one();
 
         if (null === $store) $log->save('api','webhook','woocommerce','Store account not found.',true);
-        else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Store account found: id # '.$store->id_store);
+        else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Store account found: id # '.$store->id);
 
         // check if pkey exist
         if (false === $get['pkey']) $log->save('api','webhook','woocommerce','Public key isn\'t set or invalid.',true);
         else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Public key is: '.$get['pkey']);
 
         // check if public api key exists
-        $apikeys = ApiKeys::find()
-            ->andWhere(['key_public'=>$get['pkey']])
+        $apikeys = Apikeys::find()
+            ->andWhere(['public_key'=>$get['pkey']])
             ->one();
 
         if (null === $apikeys) $log->save('api','webhook','woocommerce','Api keys not found.',true);
-        else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Api keys found. Public key is: '.$apikeys->key_public);
+        else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Api keys found. Public key is: '.$apikeys->public_key);
 
         // now I'm ready to check signature
-        $secret = $WebApp->decrypt($apikeys->key_secret);
+        $secret = $WebApp->decrypt($apikeys->secret_key);
         $receivedHash = '';
         foreach ($headers as $name => $value) {
             if (strtoupper($name) == 'X-WC-WEBHOOK-SIGNATURE'){
                 $receivedHash = $value[0];
             }
         }
+
+        // check if apikey belongs to store
+        if ($apikeys->store->id != $store->id) $log->save('api','webhook','woocommerce','Api keys do not belong to the store: ('. $apikeys->store->id .'<>'.$store->id.')',true);
+        else if (!PRODUCTION) $log->save('api','webhook','woocommerce','Api keys belong to the store');
+
 
         // IN FASE DI TEST È DISABILITATO IL CONTROLLO
         $generatedHash = base64_encode(hash_hmac('sha256', $rawcontent, $secret, true));

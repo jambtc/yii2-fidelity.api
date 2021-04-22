@@ -3,11 +3,11 @@
 namespace app\models\query;
 
 /**
- * This is the ActiveQuery class for [[\app\models\ApiKeys]].
+ * This is the ActiveQuery class for [[\app\models\Host]].
  *
- * @see \app\models\ApiKeys
+ * @see \app\models\Host
  */
-class ApiKeysQuery extends \yii\db\ActiveQuery
+class HostQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class ApiKeysQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\ApiKeys[]|array
+     * @return \app\models\Host[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class ApiKeysQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return \app\models\ApiKeys|array|null
+     * @return \app\models\Host|array|null
      */
     public function one($db = null)
     {

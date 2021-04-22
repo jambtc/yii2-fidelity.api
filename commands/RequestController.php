@@ -13,7 +13,10 @@ use app\models\ReRequests;
 use app\components\WebApp;
 use app\components\Settings;
 use app\components\ApiLog;
+
 use yii\httpclient\Client;
+use yii\httpclient\Request;
+use yii\httpclient\RequestEvent;
 
 /**
  *
@@ -58,7 +61,9 @@ class RequestController extends Controller
             $this->log('Error. The requested id does not exist.',true);
 
         $this->log("Request loaded. Status is $model->sent");
-        $settings=Settings::rulesApiKeys();
+        $rulesApiKeys = Settings::rulesApiKeys();
+        $this->log("rules api key is: <pre>".print_r($rulesApiKeys->attributes,true)."</pre>");
+        //exit;
 
         // INIZIO IL LOOP
         while(true){
@@ -74,33 +79,38 @@ class RequestController extends Controller
                 $postdata = http_build_query($payload, '', '&');
 
                 // set API key and sign the message
-                $sign = hash_hmac('sha512', hash('sha256', $nonce . $postdata, true), base64_decode(WebApp::decrypt($settings->secret_key)), true);
+                $sign = hash_hmac('sha512', hash('sha256', $nonce . $postdata, true), base64_decode(WebApp::decrypt($rulesApiKeys->secret_key)), true);
 
                 $headers = array(
-                  'API-Key: ' . $settings->public_key,
+                  'API-Key: ' . $rulesApiKeys->public_key,
                   'API-Sign: ' . base64_encode($sign),
                   'x-fre-origin: '. $payload->event->merchant_id,
-                  'Authorization: ' . $settings->public_key,
+                  'Authorization: ' . $rulesApiKeys->public_key,
                   'Content-Type: application/json',
                   'accept: application/json',
                 );
 
                 $jsonpayload = json_encode($payload);
 
-                // $log->save('api.command','request','index',"json payload is: <pre>".print_r($payload,true)."</pre>");
+                $this->log("json payload is: <pre>".print_r($jsonpayload,true)."</pre>");
+                $this->log("payload is: <pre>".print_r($payload,true)."</pre>");
                 // exit;
 
                 $client = new Client();
                 $request = $client->createRequest()
                     ->setMethod('POST')
-                    ->setUrl($settings->url)
-                    ->setData($payload)
-                    ->setHeaders($headers)
-                    ->send();
+                    ->setFormat(Client::FORMAT_JSON)
+                    ->setUrl($rulesApiKeys->url)
+                    ->setData($jsonpayload)
+                    ->setHeaders($headers);
+
+
+                $request->send();
 
                 $response = $request->getData();
-                $this->log("Response is: <pre>".print_r($response,true)."</pre>");
-
+                $this->log("json Response is: <pre>".print_r($response,true)."</pre>");
+                $this->log("array Response is: <pre>".print_r(json_decode($response,true),true)."</pre>");
+                exit;
                 if ($this->analisi($response)){
                     $model->sent = 1;
                     $model->save();
@@ -115,7 +125,7 @@ class RequestController extends Controller
 				break;
 			}
 
-            $this->log("Request id: $id, Status: ".$model->sent.", Waiting seconds: ".$try."\n");
+            $this->log("Request id: $this->id, Status: ".$model->sent.", Waiting seconds: ".$try."\n");
 			sleep($try);
 			$try = $try*2;
 
@@ -123,7 +133,7 @@ class RequestController extends Controller
 				// imposto il sent to error
 				$model->sent = 2;
 				$model->save();
-				$this->log('Payload '.$id.' is not monitored anymore.');
+				$this->log('Payload '.$this->id.' is not monitored anymore.');
 				break;
 			}
         }
