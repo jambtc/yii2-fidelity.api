@@ -49,7 +49,7 @@ class RequestController extends Controller
     {
         set_time_limit(0); //imposto il time limit unlimited
 
-        $try = 1;
+        $try = 32;
 		$MAXtry = 32768; // quasi 1 giorno di monitoraggio
 
 		$this->log("Checking request $this->id");
@@ -108,6 +108,8 @@ class RequestController extends Controller
                 $request->send();
 
                 $response = $request->getData();
+                $this->log("dump Response is: <pre>" . var_dump($response) . "</pre>");
+
                 $this->log("json Response is: <pre>".print_r($response,true)."</pre>");
                 $this->log("array Response is: <pre>".print_r(json_decode($response,true),true)."</pre>");
                 // exit;
@@ -149,7 +151,7 @@ class RequestController extends Controller
     private function analisi($response){
         $return = false;
         if ($this->isJson($response)){
-            $analisi = json_decode(($response));
+            $analisi = json_decode($response, true); // to array
         }
         if (is_array($analisi)){
             if (!isset($analisi['errors'])){
