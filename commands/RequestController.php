@@ -92,7 +92,8 @@ class RequestController extends Controller
 
                 $jsonpayload = json_encode($payload);
 
-                $this->log("json payload is: <pre>".print_r($jsonpayload,true)."</pre>");
+                $this->log("headers are: <pre>" . print_r($headers, true) . "</pre>");
+                $this->log("json payload is: <pre>" . print_r($jsonpayload, true) . "</pre>");
                 $this->log("payload is: <pre>".print_r($payload,true)."</pre>");
                 // exit;
 
