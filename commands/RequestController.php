@@ -108,8 +108,7 @@ class RequestController extends Controller
                 $request->send();
 
                 $response = $request->getData();
-                $this->log("dump Response is: <pre>" . var_dump($response) . "</pre>");
-
+                // $this->log("dump Response is: <pre>" . var_dump($response) . "</pre>");
                 $this->log("json Response is: <pre>".print_r($response,true)."</pre>");
                 $this->log("array Response is: <pre>".print_r(json_decode($response,true),true)."</pre>");
                 // exit;
