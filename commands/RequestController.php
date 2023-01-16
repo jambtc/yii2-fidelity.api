@@ -140,8 +140,17 @@ class RequestController extends Controller
         return ExitCode::OK;
     }
 
-    private function analisi($analisi){
+    private function isJson($string)
+    {
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+
+    private function analisi($response){
         $return = false;
+        if ($this->isJson($response)){
+            $analisi = json_decode(($response));
+        }
         if (is_array($analisi)){
             if (!isset($analisi['errors'])){
                 foreach ($analisi['event'] as $id => $group){
@@ -179,7 +188,7 @@ class RequestController extends Controller
             }
             $return = true;
         }else{
-            $this->log('Payload not sent! Retry again.');
+            $this->log('Error! Response is not json, retry again. <pre>'.print_r($response,true).'</pre>');
         }
         return $return;
     }

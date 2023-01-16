@@ -7,6 +7,6 @@ services:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated
       - ./:/app:delegated
     ports:
-      - '8000:80'
+      - '8888:80'
       - '2222:22'
     network_mode: "host"

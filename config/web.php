@@ -2,7 +2,8 @@
 $secrets = require __DIR__ . '/secrets.php';
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
-$urlmanager = isset($_ENV['DOCKERCONTAINER']) ? require __DIR__ . '/urlmanager.php' : [];
+// $urlmanager = isset($_ENV['DOCKERCONTAINER']) ? require __DIR__ . '/urlmanager.php' : [];
+$urlmanager = require __DIR__ . '/urlmanager.php';
 
 $config = [
     'id' => 'basic',
