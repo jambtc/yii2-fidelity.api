@@ -155,7 +155,7 @@ class RequestController extends Controller
         }
         if (is_array($analisi)){
             if (!isset($analisi['errors'])){
-                foreach ($analisi['event'] as $id => $group){
+                foreach ($analisi as $id => $group){
                     $this->log("Group array is: <pre>".print_r($group,true)."</pre>");
                     if (is_array($group)){
                         foreach ($group as $id => $rules){
