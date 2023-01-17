@@ -167,6 +167,8 @@ class V1Controller extends Controller
 
         if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','I\'m in.');
         if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer id is: <pre>'.var_dump($customer_id).'</pre>');
+        if (!PRODUCTION) $log->save('api.fidelity', 'index', 'payload', 'payload is: <pre>' . print_r($payload, true) . '</pre>');
+
 
         $store = Stores::findOne($store_id);
         $blockchain = $store->blockchain;
