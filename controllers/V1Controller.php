@@ -163,7 +163,7 @@ class V1Controller extends Controller
         $log = new ApiLog;
 
         $store_id = $payload->store_id;  // needed to select which blockchain use
-        $customer_id = (integer) $payload->customer_id;
+        $customer_id = $payload->customer_id;
 
         if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','I\'m in.');
         if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer id is: <pre>'.var_dump($customer_id).'</pre>');
@@ -173,12 +173,12 @@ class V1Controller extends Controller
         $store = Stores::findOne($store_id);
         $blockchain = $store->blockchain;
         // echo '<pre>'.print_r($blockchain,true);exit;
-        // if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','Blockchain is: <pre>'.print_r($blockchain,true).'</pre>');
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','Blockchain is: <pre>'.print_r($blockchain,true).'</pre>');
 
 
         //Carico i parametri poa dello store
         $settings = Settings::poa($blockchain->id);
-        // if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','poa is: <pre>'.print_r($settings,true).'</pre>');
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','poa is: <pre>'.print_r($settings,true).'</pre>');
 
 
         // imposto eth
@@ -203,18 +203,22 @@ class V1Controller extends Controller
 
         while ($nonce < $maxNonce)
 		{
-			$tx = $ERC20->SendToken([
-				'nonce' => $nonce,
-				'from' => $fromAccount, //indirizzo commerciante
-				'contractAddress' => $settings->smart_contract_address, //indirizzo contratto
-				'toAccount' => $toAccount,
-				'amount' => $amountForContract,
-				'gas' => '0x200b20', // $gas se supera l'importo 0x200b20 va in eerrore gas exceed limit !!!!!!
-				'gasPrice' => '1000', // gasPrice giusto?
-				'value' => '0',
-				'chainId' => $settings->chain_id,
-				'decryptedSign' => $decrypted,
-			]);
+
+            $data = [
+                'nonce' => $nonce,
+                'from' => $fromAccount, //indirizzo commerciante
+                'contractAddress' => $settings->smart_contract_address, //indirizzo contratto
+                'toAccount' => $toAccount,
+                'amount' => $amountForContract,
+                'gas' => '0x200b20', // $gas se supera l'importo 0x200b20 va in eerrore gas exceed limit !!!!!!
+                'gasPrice' => '1000', // gasPrice giusto?
+                'value' => '0',
+                'chainId' => $settings->chain_id,
+                'decryptedSign' => $decrypted,
+            ];
+            if (!PRODUCTION) $log->save('api.fidelity', 'index', 'pay customer', 'data is: <pre>' . print_r($data, true) . '</pre>');
+
+			$tx = $ERC20->SendToken($data);
 
 			if ($tx !== null){
 				break;
