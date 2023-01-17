@@ -113,11 +113,11 @@ class RequestController extends Controller
                 $this->log("json Response is: <pre>".print_r($response,true)."</pre>");
                 $this->log("array Response is: <pre>".print_r(json_decode($response,true),true)."</pre>");
                 // exit;
-                if ($this->analisi($response)){
+                //if ($this->analisi($response)){
                     $model->sent = 1;
                     $model->save();
                     break;
-                }
+                // }
                 // continue loop
             }else if ($model->sent == 1){
 				$this->log('Payload already sent!');
