@@ -114,7 +114,7 @@ class Erc20 extends Component
                 $jsonBody = $this->getJsonBody($err->getMessage());
 
                 if ($jsonBody === NULL){
-                    throw new HttpException(404,'ERROR: Nonce error count...');
+                    throw new HttpException(404,'ERROR in send Token: '. $err->getMessage());
                 }else{
                     throw new HttpException(404,$jsonBody['error']['message']);
                 }

@@ -205,7 +205,7 @@ class V1Controller extends Controller
 		{
 
             $data = [
-                'nonce' => '0x'.dechex($nonce), //è un object BigInteger$nonce,
+                'nonce' => $nonce, //è un object BigInteger$nonce,
                 'from' => $fromAccount, //indirizzo commerciante
                 'contractAddress' => $settings->smart_contract_address, //indirizzo contratto
                 'toAccount' => $toAccount,
