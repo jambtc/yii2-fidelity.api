@@ -96,9 +96,13 @@ class V1Controller extends Controller
         $payload = $ipn->event;
         if (!PRODUCTION) $log->save('api.fidelity','index','manage event','Payload is: <pre>'.print_r($payload,true).'</pre>');
 
-        if (true === empty($payload->id)) $log->save('api.fidelity','index','manage event','Invalid Server payment notification message received - did not receive invoice ID.',true);
-        else if (!PRODUCTION) $log->save('api.fidelity','index','manage event','Ipn id is valid.');
+        if (true === empty($payload->store_id)) $log->save('api.fidelity','index','manage event','Invalid Server payment notification message received - did not receive store ID.',true);
+        else if (!PRODUCTION) $log->save('api.fidelity','index','manage event','Store id is valid.');
 
+        // if (true === empty($payload->customer_id)) $log->save('api.fidelity', 'index', 'manage event', 'Invalid Server payment notification message received - did not receive store ID.', true);
+        // else if (!PRODUCTION) $log->save('api.fidelity', 'index', 'manage event', 'Store id is valid.');
+
+        
         // check if actions exists
         if (false === isset($payload->actions)) $log->save('api.fidelity','index','manage event','Actions not set, cannot continue.',true);
 
