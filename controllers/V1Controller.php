@@ -163,11 +163,11 @@ class V1Controller extends Controller
         $log = new ApiLog;
 
         $store_id = $payload->store_id;  // needed to select which blockchain use
-        $customer_id = $payload->customer_id;
+        // $customer_id = $payload->customer_id;
 
         if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','I\'m in.');
-        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer id is: <pre>'.var_dump($customer_id).'</pre>');
-        if (!PRODUCTION) $log->save('api.fidelity', 'index', 'payload', 'payload is: <pre>' . print_r($payload, true) . '</pre>');
+        if (!PRODUCTION) $log->save('api.fidelity','index','pay customer','customer id is: <pre>'.print_r($payload->customer_id,true).'</pre>');
+        if (!PRODUCTION) $log->save('api.fidelity', 'index', 'pay to customer', 'payload is: <pre>' . print_r($payload, true) . '</pre>');
 
 
         $store = Stores::findOne($store_id);
@@ -205,7 +205,7 @@ class V1Controller extends Controller
 		{
 
             $data = [
-                'nonce' => $nonce,
+                'nonce' => '0x'.dechex($nonce), //è un object BigInteger$nonce,
                 'from' => $fromAccount, //indirizzo commerciante
                 'contractAddress' => $settings->smart_contract_address, //indirizzo contratto
                 'toAccount' => $toAccount,
@@ -247,7 +247,7 @@ class V1Controller extends Controller
 		$rate = 1; //eth::getFiatRate('token'); //
 
 		$tokens = new Transactions;
-		$tokens->id_user = $customer_id;
+		$tokens->id_user = $payload->customer_id;
 		$tokens->status = 'new';
 		$tokens->type = 'token';
 		$tokens->token_price = $amount;
