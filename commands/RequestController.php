@@ -89,9 +89,10 @@ class RequestController extends Controller
                   'API-Sign: ' . base64_encode($sign),
                   'x-fre-origin: '. $payload->event->merchant_id,
                   'Authorization: ' . $rulesApiKeys->public_key,
+                  'Accept: application/json',
                   'Content-Type: application/json',
                   'Content-Length: ' . strlen($jsonpayload),
-                  'Accept: application/json',
+                  'Host: 164.68.126.56:5000',
                 );
 
 
