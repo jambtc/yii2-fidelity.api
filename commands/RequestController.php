@@ -78,6 +78,9 @@ class RequestController extends Controller
                 // build the POST data string
                 $postdata = http_build_query($payload, '', '&');
 
+                // encode payload
+                $jsonpayload = json_encode($payload);
+
                 // set API key and sign the message
                 $sign = hash_hmac('sha512', hash('sha256', $nonce . $postdata, true), base64_decode(WebApp::decrypt($rulesApiKeys->secret_key)), true);
 
@@ -87,10 +90,10 @@ class RequestController extends Controller
                   'x-fre-origin: '. $payload->event->merchant_id,
                   'Authorization: ' . $rulesApiKeys->public_key,
                   'Content-Type: application/json',
-                  'accept: application/json',
+                  'Content-Length: ' . strlen($jsonpayload),
+                  'Accept: application/json',
                 );
 
-                $jsonpayload = json_encode($payload);
 
                 $this->log("headers are: <pre>" . print_r($headers, true) . "</pre>");
                 $this->log("json payload is: <pre>" . print_r($jsonpayload, true) . "</pre>");
@@ -109,16 +112,20 @@ class RequestController extends Controller
                 $request->send();
 
                 $response = $request->getData();
-                // $this->log("dump Response is: <pre>" . var_dump($response) . "</pre>");
                 $this->log("json Response is: <pre>".print_r($response,true)."</pre>");
                 $this->log("array Response is: <pre>".print_r(json_decode($response,true),true)."</pre>");
-                // exit;
-                //if ($this->analisi($response)){
+                
+                if (null !== $response){
+                    $this->log('The Rules Engine responded correctly to the payload submission!');
+                    
                     $model->sent = 1;
                     $model->save();
                     break;
-                // }
+                } else {
+                    $this->log('The response from the Rules Engine is null!');
+                }  
                 // continue loop
+
             }else if ($model->sent == 1){
 				$this->log('Payload already sent!');
 				break;
@@ -127,71 +134,18 @@ class RequestController extends Controller
 				break;
 			}
 
-            $this->log("Request id: $this->id, Status: ".$model->sent.", Waiting seconds: ".$try."\n");
-			sleep($try);
-			$try = $try*2;
-
 			if ($try > $MAXtry){
 				// imposto il sent to error
 				$model->sent = 2;
 				$model->save();
-				$this->log('Payload '.$this->id.' is not monitored anymore.');
 				break;
 			}
+
+            $this->log("Request id: $this->id, Status: " . $model->sent . ", Waiting seconds: " . $try . "\n");
+            sleep($try);
+            $try = $try * 2;
         }
+        $this->log('Payload ' . $this->id . ' is not monitored anymore.');
         return ExitCode::OK;
-    }
-
-    private function isJson($string)
-    {
-        json_decode($string);
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-
-    private function analisi($response){
-        $return = false;
-        if ($this->isJson($response)){
-            $analisi = json_decode($response, true); // to array
-        }
-        if (is_array($analisi)){
-            if (!isset($analisi['errors'])){
-                foreach ($analisi as $id => $group){
-                    $this->log("Group array is: <pre>".print_r($group,true)."</pre>");
-                    if (is_array($group)){
-                        foreach ($group as $id => $rules){
-                            $this->log("Rules array is: <pre>".print_r($rules,true)."</pre>");
-                            if (is_array($rules)){
-                                foreach ($rules as $id => $rule){
-                                    $this->log("Rule array is: <pre>".print_r($rule,true)."</pre>");
-                                    if ($rule == 'ok'){
-                                        $this->log('Payload sent correctly!');
-                                    } else {
-                                        $this->log('Payload sent, but cannot trigger event!');
-                                    }
-                                }
-                            } else {
-                                if ($rules == 'ok'){
-                                    $this->log('Payload sent correctly!');
-                                } else {
-                                    $this->log('Payload sent, but cannot trigger event!');
-                                }
-                            }
-                        }
-                    } else {
-                        if ($group == 'ok'){
-                            $this->log('Payload sent correctly!');
-                        } else {
-                            $this->log('Payload sent, but cannot trigger event!');
-                        }
-                    }
-                }
-            }else{
-                $this->log('Payload sent, but there was an error:'. $analisi['errors']['detail']);
-            }
-            $return = true;
-        }else{
-            $this->log('Error! Response is not json, retry again. <pre>'.print_r($response,true).'</pre>');
-        }
-        return $return;
     }
 }
