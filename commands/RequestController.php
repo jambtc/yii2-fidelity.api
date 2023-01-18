@@ -92,7 +92,7 @@ class RequestController extends Controller
                   'Accept: application/json',
                   'Content-Type: application/json',
                   'Content-Length: ' . strlen($jsonpayload),
-                  'Host: 164.68.126.56:5000',
+                  'Host: ' . $rulesApiKeys->url,
                 );
 
 
