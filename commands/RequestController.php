@@ -81,6 +81,12 @@ class RequestController extends Controller
                 // encode payload
                 $jsonpayload = json_encode($payload);
 
+                // get the domain
+                $parsed = parse_url($rulesApiKeys->url);
+                $host = $parsed['host'];
+                $port = $parsed['port'];
+
+
                 // set API key and sign the message
                 $sign = hash_hmac('sha512', hash('sha256', $nonce . $postdata, true), base64_decode(WebApp::decrypt($rulesApiKeys->secret_key)), true);
 
@@ -92,7 +98,7 @@ class RequestController extends Controller
                   'Accept: application/json',
                   'Content-Type: application/json',
                   'Content-Length: ' . strlen($jsonpayload),
-                  'Host: ' . $rulesApiKeys->url,
+                  'Host: '. $host .':'. $port,
                 );
 
 
