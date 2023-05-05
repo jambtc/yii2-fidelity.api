@@ -25,4 +25,14 @@ return [
 
     //
     'user.rememberMeDuration' => 7776000, // This number is 60sec * 60min * 24h * 90days
+
+    /**
+     * set webhook redirect urls
+     */
+    'PRODUCTION' => $secrets['PRODUCTION'],
+    'PRODUCTION_REDIRECT_URL' => $secrets['PRODUCTION_REDIRECT_URL'],
+    'DOCKER_SANDBOX_REDIRECT_URL' => $secrets['DOCKER_SANDBOX_REDIRECT_URL'],
+    'STANDARD_SANDBOX_REDIRECT_URL' => $secrets['STANDARD_SANDBOX_REDIRECT_URL'],
+    
+    
 ];

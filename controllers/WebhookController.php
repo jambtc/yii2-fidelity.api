@@ -4,15 +4,13 @@ namespace app\controllers;
 
 use Yii;
 use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\Response;
 
 use yii\helpers\Json;
-use yii\helpers\Url;
 
 use app\components\ApiLog;
-use app\components\Settings;
-use app\components\Messages;
 use app\components\WebApp;
 use app\components\Seclib;
 
@@ -21,47 +19,33 @@ use app\models\MPWallets;
 use app\models\Stores;
 use app\models\ReRequests;
 use app\models\Apikeys;
-use app\models\Merchants;
 
 
 class WebhookController extends Controller
 {
-
     /**
      * {@inheritdoc}
      */
     public function behaviors()
     {
         // change this constant to true in PRODUCTION
-        define('PRODUCTION', false);
+        define('PRODUCTION', Yii::$app->params['PRODUCTION']);
         define('DOCKER_CONTAINER', isset($_ENV['DOCKERCONTAINER']) ? true : false);
 
         // urls where rules engine have to return its response
-        define('PRODUCTION_REDIRECT_URL', 'https://dashboard.txlab.it/index.php?r=api');
+        define('PRODUCTION_REDIRECT_URL', Yii::$app->params['PRODUCTION_REDIRECT_URL']); 
 
         // REDIRECT_URL
-        define('DOCKER_SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/v1');
-        define('STANDARD_SANDBOX_REDIRECT_URL', 'https://api.fidelize.tk/index.php?r=v1');
+        define('DOCKER_SANDBOX_REDIRECT_URL', Yii::$app->params['DOCKER_SANDBOX_REDIRECT_URL']);
+        define('STANDARD_SANDBOX_REDIRECT_URL', Yii::$app->params['STANDARD_SANDBOX_REDIRECT_URL']);
 
         return [
-            // 'access' => [
-            //     'class' => AccessControl::className(),
-            //     'only' => ['logout'],
-            //     'rules' => [
-            //         [
-            //             'actions' => ['logout'],
-            //             'allow' => true,
-            //             'roles' => ['@'],
-            //         ],
-            //     ],
-            // ],
-
-            // 'verbs' => [
-            //     'class' => VerbFilter::className(),
-            //     'actions' => [
-            //         'index' => ['post'],
-            //     ],
-            // ],
+            'verbs' => [
+                'class' => VerbFilter::className(),
+                'actions' => [
+                    'index' => ['post'],
+                ],
+            ],
         ];
     }
 
@@ -71,24 +55,7 @@ class WebhookController extends Controller
         return parent::beforeAction($action);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function actions()
-    {
-        return [
-            'error' => [
-                'class' => 'yii\web\ErrorAction',
-            ],
-            'captcha' => [
-                'class' => 'yii\captcha\CaptchaAction',
-                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
-            ],
-        ];
-    }
-
-
-
+   
     /**
      * Displays homepage.
      *
